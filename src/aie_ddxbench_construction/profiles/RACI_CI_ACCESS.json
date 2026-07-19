@@ -1,0 +1,80 @@
+{
+  "mechanism": "RACI_CI_ACCESS",
+  "target_case_count": 20,
+  "description": "Radiationless decay through accessible conical intersections, avoided crossings, or excited-state crossing funnels controls weak emission or AIE turn-on when the crossing pathway is blocked in aggregates, crystals, or constrained environments.",
+  "queries": [
+    "\"aggregation-induced emission\" \"conical intersection\"",
+    "\"AIE\" \"conical intersection\" \"nonradiative decay\"",
+    "\"aggregation-induced emission\" \"radiationless decay\" \"conical intersection\"",
+    "\"AIEgen\" \"conical intersection\" \"TD-DFT\"",
+    "\"aggregation-induced emission\" \"minimum energy conical intersection\"",
+    "\"AIE\" \"MECI\" fluorescence",
+    "\"aggregation-induced emission\" \"S1/S0\" \"conical intersection\"",
+    "\"AIE\" \"potential energy surface\" \"nonradiative decay\"",
+    "\"aggregation-induced emission\" \"excited-state decay path\"",
+    "\"AIE\" \"internal conversion\" \"conical intersection\"",
+    "\"solid-state emission\" \"conical intersection\" \"AIE\"",
+    "\"crystal\" \"conical intersection\" \"aggregation-induced emission\"",
+    "\"restriction\" \"conical intersection\" \"aggregation-induced emission\"",
+    "\"AIE\" \"CI access\" photophysics",
+    "\"AIE\" \"radiationless pathway\" \"TDDFT\"",
+    "\"AIE\" \"excited-state relaxation\" \"crossing point\"",
+    "\"AIE\" \"barrierless\" \"conical intersection\"",
+    "\"aggregation-induced emission\" \"non-emissive in solution\" \"conical intersection\"",
+    "\"AIE\" \"CASSCF\" \"conical intersection\"",
+    "\"AIE\" \"surface hopping\" \"nonradiative decay\"",
+    "site:pubs.acs.org \"aggregation-induced emission\" \"conical intersection\"",
+    "site:pubs.rsc.org \"aggregation-induced emission\" \"conical intersection\"",
+    "site:onlinelibrary.wiley.com \"AIE\" \"conical intersection\"",
+    "site:nature.com \"AIE\" \"conical intersection\"",
+    "site:sciencedirect.com \"aggregation-induced emission\" \"conical intersection\""
+  ],
+  "mechanism_signal_terms": [
+    "conical intersection",
+    "minimum energy conical intersection",
+    "MECI",
+    "CI access",
+    "radiationless decay",
+    "internal conversion",
+    "S1/S0 crossing",
+    "potential energy surface",
+    "excited-state relaxation path",
+    "nonradiative decay channel",
+    "surface hopping",
+    "CASSCF",
+    "MS-CASPT2",
+    "crossing funnel",
+    "barrier to conical intersection"
+  ],
+  "positive_evidence": [
+    "computed S1/S0 conical intersection or avoided crossing for the target molecule",
+    "minimum-energy path or PES scan showing accessible radiationless decay in solution",
+    "aggregate, crystal, host, or steric constraint blocks access to the crossing geometry",
+    "comparison between emissive and non-emissive analogues explained by different CI accessibility",
+    "time-resolved or lifetime data supporting fast internal conversion in one state and suppressed decay in another",
+    "quantum-chemical evidence such as CASSCF, CASPT2, ADC, TD-DFT, or nonadiabatic dynamics linked to molecule-specific photophysics",
+    "explicit negative evidence excluding simpler RIM, TICT, ESIPT, excimer, or packing-only explanations",
+    "state/environment-dependent evidence where solution and solid/aggregate have different nonradiative pathways"
+  ],
+  "insufficient_evidence": [
+    "only mentions internal conversion generically without a molecule-specific crossing pathway",
+    "only reports AIE/AIEE phenomenology with no excited-state calculation or decay-path evidence",
+    "only uses conical intersection as background theory",
+    "only has TD-DFT vertical excitations or orbitals without PES or pathway analysis",
+    "evidence is only series-level and cannot be tied to a single candidate molecule",
+    "only application or sensing performance without mechanism diagnosis"
+  ],
+  "common_confusions": [
+    "RIM_RIR_RIV",
+    "ICT_TICT_CT",
+    "ESIPT_PT",
+    "PACKING_HOST_MATRIX_CONFINEMENT",
+    "RADIATIVE_RATE_STATE_BALANCE"
+  ],
+  "triage_policy": {
+    "high": "Original research or primary computational mechanism paper with concrete molecule labels, excited-state pathway evidence, and explicit discussion of conical-intersection/radiationless-decay accessibility.",
+    "medium": "Likely primary source with AIE or state-dependent emission and plausible nonradiative decay/PES evidence, but snippets do not fully show molecule-level CI evidence.",
+    "low": "Possibly relevant photophysics paper with weak snippet evidence; reserve only if it can provide useful competing-mechanism or negative-evidence cases.",
+    "reject": "Review, patent, tutorial, generic theory page, database-only result, or paper with no clear molecule-level excited-state mechanism evidence."
+  }
+}

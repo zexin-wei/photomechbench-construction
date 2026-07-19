@@ -1,0 +1,15 @@
+{
+  "manifest_version": "1.0",
+  "papers": [
+    {
+      "paper_id": "P001",
+      "doi": "10.0000/replace.with.verified.doi",
+      "title": "Replace with the verified article title",
+      "pdf_name": "optional_original_filename.pdf",
+      "retrieval_mechanism": "RACI_CI_ACCESS",
+      "source_md": "../work/papers/P001/parsed/source.md",
+      "source_image_dir": "../work/papers/P001/parsed/images"
+    }
+  ],
+  "cases": []
+}

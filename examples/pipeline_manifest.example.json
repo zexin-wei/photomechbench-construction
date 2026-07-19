@@ -1,0 +1,43 @@
+{
+  "manifest_version": "1.0",
+  "papers": [
+    {
+      "paper_id": "P001",
+      "doi": "10.0000/synthetic.example",
+      "title": "Synthetic molecular photophysics fixture",
+      "pdf_name": "synthetic_fixture.pdf",
+      "retrieval_mechanism": "RIM_RIR_RIV",
+      "source_md": "fixtures/source.md",
+      "source_images": [
+        "fixtures/source_structure.png"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "AIE_DDX_SYNTHETIC_001",
+      "candidate_id": "P001_A",
+      "paper_id": "P001",
+      "molecule_label": "A",
+      "entity_type": "molecule",
+      "structure_images": [
+        "fixtures/source_structure.png"
+      ],
+      "structure_sources": [
+        "Synthetic Scheme 1"
+      ],
+      "risk_flags": [],
+      "source_article": {
+        "candidate_id": "P001_A",
+        "doi": "10.0000/synthetic.example",
+        "title": "Synthetic molecular photophysics fixture",
+        "molecule_label": "A"
+      },
+      "target_context": {
+        "retrieval_mechanism": "RIM_RIR_RIV",
+        "note": "Synthetic example only"
+      },
+      "archive_mechanism": "RIM_RIR_RIV"
+    }
+  ]
+}

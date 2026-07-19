@@ -1,0 +1,13 @@
+{
+  "manifest_version": "1.0",
+  "papers": [
+    {
+      "paper_id": "P001",
+      "doi": "10.0000/replace.with.verified.doi",
+      "title": "Replace with the verified article title",
+      "retrieval_mechanism": "RACI_CI_ACCESS",
+      "source_pdf": "fixtures/replace_with_main_article.pdf"
+    }
+  ],
+  "cases": []
+}

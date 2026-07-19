@@ -1,0 +1,27 @@
+{
+  "mechanism": "RADIATIVE_RATE_STATE_BALANCE",
+  "target_case_count": 16,
+  "description": "Emission enhancement or quenching is explained by changes in radiative/nonradiative rate balance, oscillator strength, state ordering, or allowedness rather than a single structural motif alone.",
+  "queries": [
+    "\"aggregation-induced emission\" \"radiative rate\" \"nonradiative rate\"",
+    "\"AIE\" \"oscillator strength\"",
+    "\"AIE\" \"kr\" \"knr\"",
+    "\"aggregation-induced emission\" \"radiative decay\"",
+    "\"solid-state emission\" \"nonradiative rate\" \"AIE\"",
+    "\"AIE\" \"state ordering\" fluorescence",
+    "\"AIE\" \"allowed transition\" \"oscillator strength\"",
+    "\"aggregation-induced emission\" \"quantum yield\" \"lifetime\" \"rate\"",
+    "site:pubs.acs.org \"AIE\" \"radiative rate\"",
+    "site:pubs.rsc.org \"aggregation-induced emission\" \"oscillator strength\""
+  ],
+  "mechanism_signal_terms": ["radiative rate", "nonradiative rate", "kr", "knr", "oscillator strength", "state ordering", "allowed transition", "quantum yield", "lifetime"],
+  "positive_evidence": ["quantum yield plus lifetime-derived kr/knr", "computed oscillator strength changes", "state ordering analysis", "radiative/nonradiative rate comparison across environments", "explicit balance of emissive and dark states"],
+  "insufficient_evidence": ["only quantum yield", "only lifetime without rate analysis", "generic nonradiative decay wording", "no molecule-level rate/state evidence"],
+  "common_confusions": ["RIM_RIR_RIV", "RACI_CI_ACCESS", "ICT_TICT_CT", "TRIPLET_METAL_ENERGY_TRANSFER"],
+  "triage_policy": {
+    "high": "Primary paper with molecule-specific QY/lifetime/rate or oscillator-strength evidence.",
+    "medium": "Likely primary paper with relevant photophysical rates but incomplete snippets.",
+    "low": "Only QY/lifetime mentions.",
+    "reject": "Review or no rate/state-balance evidence."
+  }
+}

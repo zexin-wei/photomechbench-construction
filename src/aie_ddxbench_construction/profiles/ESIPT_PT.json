@@ -1,0 +1,27 @@
+{
+  "mechanism": "ESIPT_PT",
+  "target_case_count": 16,
+  "description": "Excited-state intramolecular proton transfer or related proton-transfer tautomerization contributes to emission, quenching, dual emission, or AIE behavior.",
+  "queries": [
+    "\"aggregation-induced emission\" \"ESIPT\"",
+    "\"AIE\" \"excited-state intramolecular proton transfer\"",
+    "\"AIE\" \"proton transfer\" fluorescence",
+    "\"ESIPT\" \"aggregation-induced emission\" \"mechanism\"",
+    "\"solid-state emission\" \"ESIPT\"",
+    "\"AIEgen\" \"ESIPT\"",
+    "\"excited state proton transfer\" \"AIE\"",
+    "\"AIE\" \"dual emission\" \"ESIPT\"",
+    "site:pubs.acs.org \"AIE\" \"ESIPT\"",
+    "site:pubs.rsc.org \"aggregation-induced emission\" \"ESIPT\""
+  ],
+  "mechanism_signal_terms": ["ESIPT", "excited-state intramolecular proton transfer", "proton transfer", "keto emission", "enol emission", "dual emission", "tautomer"],
+  "positive_evidence": ["enol/keto emission assignment", "hydrogen-bond geometry", "proton-transfer PES or barrier", "isotope/substitution/control evidence", "dual emission or large Stokes shift linked to target molecule"],
+  "insufficient_evidence": ["only OH/NH motif", "only large Stokes shift", "no hydrogen-bond or tautomer evidence", "generic ESIPT background"],
+  "common_confusions": ["ICT_TICT_CT", "PET_ET", "RACI_CI_ACCESS", "RIM_RIR_RIV"],
+  "triage_policy": {
+    "high": "Primary molecule-level paper with ESIPT-specific structural, spectral, or computational evidence.",
+    "medium": "Likely ESIPT/AIE paper with incomplete snippets.",
+    "low": "Only surface ESIPT cues.",
+    "reject": "Review or no target-specific ESIPT evidence."
+  }
+}

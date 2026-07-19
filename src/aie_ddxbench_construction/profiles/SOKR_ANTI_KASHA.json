@@ -1,0 +1,27 @@
+{
+  "mechanism": "SOKR_ANTI_KASHA",
+  "target_case_count": 12,
+  "description": "Second-order Kasha-rule violations, anti-Kasha emission, higher excited-state emission, or unusual state-ordering/radiative behavior contributes to AIE photophysics.",
+  "queries": [
+    "\"aggregation-induced emission\" \"anti-Kasha\"",
+    "\"AIE\" \"Kasha\"",
+    "\"AIE\" \"higher excited state\" emission",
+    "\"aggregation-induced emission\" \"S2 emission\"",
+    "\"anti-Kasha\" fluorescence \"AIE\"",
+    "\"AIE\" \"Kasha rule\" violation",
+    "\"AIE\" \"second excited state\" fluorescence",
+    "\"aggregation-induced emission\" \"state ordering\" \"Kasha\"",
+    "site:pubs.acs.org \"AIE\" \"anti-Kasha\"",
+    "site:pubs.rsc.org \"aggregation-induced emission\" \"Kasha\""
+  ],
+  "mechanism_signal_terms": ["anti-Kasha", "Kasha rule", "S2 emission", "higher excited state", "state ordering", "second excited state", "hot fluorescence", "SOKR"],
+  "positive_evidence": ["emission assigned to S2 or higher state", "state-ordering calculation", "ultrafast evidence showing higher-state radiative channel", "exclusion of ordinary S1 fluorescence", "environment changes higher-state emission accessibility"],
+  "insufficient_evidence": ["only unusual emission color", "only Kasha mentioned in background", "no excited-state assignment", "no molecule-level evidence"],
+  "common_confusions": ["RADIATIVE_RATE_STATE_BALANCE", "ICT_TICT_CT", "RACI_CI_ACCESS", "TRIPLET_METAL_ENERGY_TRANSFER"],
+  "triage_policy": {
+    "high": "Primary paper with direct anti-Kasha/higher-state emission evidence and molecule-level assignment.",
+    "medium": "Likely unusual excited-state emission paper with incomplete snippets.",
+    "low": "Weak Kasha-related wording.",
+    "reject": "Review or no higher-state emission evidence."
+  }
+}

@@ -1,0 +1,39 @@
+"""Controlled values shared by generation, validation, review, and packaging."""
+
+from __future__ import annotations
+
+RAW_CASE_SCHEMA_VERSION = "0.4"
+RAW_CASE_TRACK = "reference-alignment"
+
+OFFICIAL_MECHANISMS = (
+    "AGGREGATE_EXCITON_EXCIMER",
+    "ESIPT_PT",
+    "HOST_GUEST_INTERACTION",
+    "ICT_TICT_CT",
+    "PACKING_HOST_MATRIX_CONFINEMENT",
+    "PET_ET",
+    "RACI_CI_ACCESS",
+    "RADIATIVE_RATE_STATE_BALANCE",
+    "RIM_RIR_RIV",
+    "SOKR_ANTI_KASHA",
+    "TRIPLET_METAL_ENERGY_TRANSFER",
+)
+
+OFFICIAL_MECHANISM_SET = frozenset(OFFICIAL_MECHANISMS)
+FINAL_SYNTHESIS_MECHANISM = "FINAL_EVIDENCE_GROUNDED_DIAGNOSIS"
+DIAGNOSIS_MECHANISMS = (*OFFICIAL_MECHANISMS, FINAL_SYNTHESIS_MECHANISM)
+
+REFERENCE_STATUSES = (
+    "supported",
+    "weakened_or_rejected",
+    "underdetermined",
+)
+
+REVIEW_DECISIONS = (
+    "PASS",
+    "PASS_WITH_CAVEAT",
+    "NEEDS_MINOR_FIX",
+    "FAIL_OR_REBUILD",
+)
+
+ACCEPTED_REVIEW_DECISIONS = frozenset({"PASS", "PASS_WITH_CAVEAT"})

@@ -1,0 +1,14 @@
+{
+  "manifest_version": "1.0",
+  "papers": [
+    {
+      "paper_id": "D5SC07579C",
+      "doi": "10.1039/d5sc07579c",
+      "title": "Pressure-induced emission enhancement through a synergistic effect between suppression of excimer formation and activation of aggregation-induced emission",
+      "pdf_name": "main_article.pdf",
+      "retrieval_mechanism": "AGGREGATE_EXCITON_EXCIMER",
+      "source_pdf": "input/main_article.pdf"
+    }
+  ],
+  "cases": []
+}

@@ -1,0 +1,9 @@
+name: aie-ddxbench-construction
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - rdkit=2022.09.5
+  - pip
+  - pip:
+      - -e .[test]

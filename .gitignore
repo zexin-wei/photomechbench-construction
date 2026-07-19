@@ -1,0 +1,33 @@
+# Python environments and generated packaging metadata
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+
+# Python and test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.pytest_tmp/
+.test-*/
+.coverage
+htmlcov/
+
+# Local runtime outputs
+work/
+runs/
+
+# Local credentials and environment overrides
+.env
+.env.*
+!.env.example
+
+# Local real-paper inputs are never distributed
+examples/real_mineru_smoke/input/
+
+# IDE and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
