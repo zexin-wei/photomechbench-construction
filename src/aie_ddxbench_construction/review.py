@@ -19,7 +19,7 @@ from .provider import ModelClient
 from .vocabulary import REVIEW_DECISIONS
 
 DECISION_PATTERN = re.compile(
-    r"(?im)^\s*overall_decision\s*:\s*(PASS_WITH_CAVEAT|NEEDS_MINOR_FIX|FAIL_OR_REBUILD|PASS)\s*$"
+    r"(?im)^\s*overall_decision\s*:\s*(NEEDS_MINOR_FIX|FAIL_OR_REBUILD|PASS)\s*$"
 )
 
 
@@ -72,11 +72,6 @@ def run_independent_review(
 ) -> ReviewResult:
     """Review one case and preserve the exact request text and input hashes."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    if resume:
-        existing = load_valid_review_result(case.case_id, output_dir)
-        if existing is not None:
-            return ReviewResult(case.case_id, "skipped_valid", existing, output_dir)
-
     json_text = case.case_json.read_text(encoding="utf-8-sig")
     source_text = case.source_md.read_text(encoding="utf-8", errors="replace")
     request_text = build_independent_review_text(
@@ -91,6 +86,9 @@ def run_independent_review(
         "prompt_version": INDEPENDENT_REVIEW_PROMPT_VERSION,
         "provider": client.provider_name,
         "model": client.model,
+        "prompt_sha256": hashlib.sha256(
+            (INDEPENDENT_REVIEW_SYSTEM_PROMPT + "\0" + request_text).encode("utf-8")
+        ).hexdigest(),
         "system_prompt": INDEPENDENT_REVIEW_SYSTEM_PROMPT,
         "user_text": request_text,
         "inputs": {
@@ -99,6 +97,14 @@ def run_independent_review(
             "structure_match.png": _file_record(case.structure_match),
         },
     }
+    if resume:
+        existing = load_valid_review_result(
+            case.case_id,
+            output_dir,
+            expected_request=request_record,
+        )
+        if existing is not None:
+            return ReviewResult(case.case_id, "skipped_valid", existing, output_dir)
     _write_json(output_dir / "request.json", request_record)
     (output_dir / "request.md").write_text(request_text, encoding="utf-8")
 
@@ -183,14 +189,21 @@ def parse_review_decision(text: str) -> str | None:
     return decision if decision in REVIEW_DECISIONS else None
 
 
-def load_valid_review_result(case_id: str, output_dir: Path) -> str | None:
+def load_valid_review_result(
+    case_id: str,
+    output_dir: Path,
+    *,
+    expected_request: dict[str, Any] | None = None,
+) -> str | None:
+    request_path = output_dir / "request.json"
     summary_path = output_dir / "review_summary.json"
     response_path = output_dir / "response.json"
     raw_path = output_dir / "raw_response.txt"
     review_path = output_dir / "review.md"
-    if not all(path.is_file() for path in (summary_path, response_path, raw_path, review_path)):
+    if not all(path.is_file() for path in (request_path, summary_path, response_path, raw_path, review_path)):
         return None
     try:
+        request = json.loads(request_path.read_text(encoding="utf-8"))
         summary = json.loads(summary_path.read_text(encoding="utf-8"))
         response = json.loads(response_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -198,6 +211,10 @@ def load_valid_review_result(case_id: str, output_dir: Path) -> str | None:
     decision = summary.get("decision")
     if summary.get("case_id") != case_id or decision not in REVIEW_DECISIONS or response.get("success") is not True:
         return None
+    if expected_request is not None:
+        for key in ("prompt_version", "provider", "model", "prompt_sha256", "inputs"):
+            if request.get(key) != expected_request.get(key):
+                return None
     raw_text = raw_path.read_text(encoding="utf-8", errors="replace")
     if parse_review_decision(raw_text) != decision:
         return None

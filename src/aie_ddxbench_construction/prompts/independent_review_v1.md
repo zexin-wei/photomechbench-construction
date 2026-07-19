@@ -293,7 +293,6 @@ Labels:
 
 ```text
 FINAL_SYNTHESIS_OK
-FINAL_SYNTHESIS_OK_WITH_CAVEAT
 FINAL_SYNTHESIS_OVERCLAIMED
 FINAL_SYNTHESIS_INCOMPLETE
 FINAL_SYNTHESIS_INCONSISTENT
@@ -301,23 +300,20 @@ FINAL_SYNTHESIS_INCONSISTENT
 
 ## 9. Overall usability and decision calibration
 
-Use `FAIL_OR_REBUILD` for a source mismatch, wrong SMILES, fabricated or missing core evidence, a severely incorrect mechanism set, an internally contradictory synthesis, unrecoverable leakage, or artifacts too incomplete to verify the case.
+Use `FAIL_OR_REBUILD` when the case cannot be made reliable through a limited correction. Examples include a source mismatch, an incorrect molecular identity or SMILES, fabricated or missing core evidence, a severely incorrect mechanism set, an internally contradictory synthesis, unrecoverable answer leakage, or artifacts that are too incomplete to verify.
 
-Use `NEEDS_MINOR_FIX` only for limited but substantive corrections, such as removable leakage, a small evidence overclaim, a materially incorrect status or role, a missing necessary caveat, an apparent rate described as microscopic, or a secondary mechanism incorrectly promoted to primary.
+Use `NEEDS_MINOR_FIX` when the case is fundamentally recoverable but requires a limited substantive correction. Examples include removable leakage, an evidence overclaim, an incorrect evidence status or diagnosis role, a missing material limitation, an inaccurate quotation or evidence link, or a secondary mechanism incorrectly assigned as primary.
 
 Do not assign `NEEDS_MINOR_FIX` merely for stylistic role names, short but adequate quotes, explanations placed in a different evidence field, formatting or OCR variation, or clearly marked indirect analogue evidence used at an appropriate strength.
 
-Use `PASS_WITH_CAVEAT` when identity, core evidence, and diagnoses are reliable but a case-specific residual limitation still materially narrows confidence or scope, even though it is already represented and requires no mandatory repair. Examples include an unavoidable component omission in the molecular representation, indirect evidence for a core claim, or a source limitation that affects the strength of a retained supported diagnosis.
+Use `PASS` when the molecular identity, core evidence, evidence links, mechanism diagnoses, and final synthesis are reliable and no mandatory correction is required. A passing case may still contain source limitations, condition-specific scope, or uncertainty in secondary and alternative mechanisms. Record these limitations in the review notes. They do not create a separate overall decision when the reference already represents them accurately.
 
-Do not downgrade a case solely because the source does not test every alternative mechanism, because secondary mechanisms remain uncertain, or because the JSON correctly records those alternatives as `underdetermined`. These are expected properties of an evidence-aware differential diagnosis, not defects in the case. If all source limitations are represented at the correct evidential strength and no material issue remains, use `PASS`.
-
-When the only stated limitation is correctly represented uncertainty in secondary or alternative mechanisms, the required decision is `PASS`, not `PASS_WITH_CAVEAT`.
+Do not assign `NEEDS_MINOR_FIX` merely because the source does not test every alternative mechanism, because a secondary mechanism remains underdetermined, or because the molecular representation omits a component that is not part of the defined target molecule. Use `PASS` when these limitations are already represented at the correct evidential strength and do not require a change to the benchmark reference.
 
 The decision, usability, and disposition must follow one of these combinations:
 
 ```text
 PASS             -> CASE_USABLE             -> KEEP
-PASS_WITH_CAVEAT -> CASE_USABLE_WITH_CAVEAT -> KEEP_WITH_CAVEAT
 NEEDS_MINOR_FIX  -> CASE_NEEDS_MINOR_FIX    -> MINOR_FIX_THEN_KEEP
 FAIL_OR_REBUILD  -> CASE_NEEDS_MAJOR_REPAIR -> MAJOR_REPAIR
 FAIL_OR_REBUILD  -> CASE_NOT_USABLE         -> REBUILD_OR_DROP
@@ -329,7 +325,7 @@ Review all core evidence units and every diagnosis unit. Repeat the item blocks 
 
 ```text
 overall_decision:
-PASS / PASS_WITH_CAVEAT / NEEDS_MINOR_FIX / FAIL_OR_REBUILD
+PASS / NEEDS_MINOR_FIX / FAIL_OR_REBUILD
 
 0. Artifact access status:
 FILE_ACCESS_COMPLETE / FILE_MISSING_OR_UNREADABLE / FILE_CONTENT_POSSIBLY_TRUNCATED
@@ -388,11 +384,11 @@ MECHANISM_VOCAB_OK / MECHANISM_VOCAB_MINOR_ISSUE / MECHANISM_VOCAB_OUT_OF_SCOPE_
 notes:
 
 11. Final synthesis:
-FINAL_SYNTHESIS_OK / FINAL_SYNTHESIS_OK_WITH_CAVEAT / FINAL_SYNTHESIS_OVERCLAIMED / FINAL_SYNTHESIS_INCOMPLETE / FINAL_SYNTHESIS_INCONSISTENT
+FINAL_SYNTHESIS_OK / FINAL_SYNTHESIS_OVERCLAIMED / FINAL_SYNTHESIS_INCOMPLETE / FINAL_SYNTHESIS_INCONSISTENT
 notes:
 
 12. Overall case usability:
-CASE_USABLE / CASE_USABLE_WITH_CAVEAT / CASE_NEEDS_MINOR_FIX / CASE_NEEDS_MAJOR_REPAIR / CASE_NOT_USABLE
+CASE_USABLE / CASE_NEEDS_MINOR_FIX / CASE_NEEDS_MAJOR_REPAIR / CASE_NOT_USABLE
 notes:
 
 13. Blocking issues:
@@ -405,7 +401,7 @@ notes:
 - recommended fix: None / ...
 
 15. Disposition:
-KEEP / KEEP_WITH_CAVEAT / MINOR_FIX_THEN_KEEP / MAJOR_REPAIR / REBUILD_OR_DROP
+KEEP / MINOR_FIX_THEN_KEEP / MAJOR_REPAIR / REBUILD_OR_DROP
 notes:
 
 One-sentence summary:
