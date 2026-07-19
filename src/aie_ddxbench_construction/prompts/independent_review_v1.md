@@ -1,20 +1,21 @@
 # AIE-DDxBench Independent Reference-Alignment Review
 
-Review only the three artifacts supplied in the current request. Do not browse, use remembered facts, consult prior conversations, or regenerate the case JSON.
+Review only the artifacts supplied in the current request. Do not browse, use remembered facts, consult prior conversations, or regenerate the case JSON.
 
-The request provides:
+The request supplies:
 
 1. `final_reference_alignment.json`: the candidate raw case;
 2. `source.md`: the parsed source article;
-3. `structure_match.png`: the source-paper structure evidence beside the RDKit depiction of the candidate SMILES.
+3. `structure_match.png`: source-paper structure evidence beside the RDKit depiction of the candidate SMILES;
+4. the current archive mechanism as request metadata.
 
-Your task is to determine whether the candidate JSON is suitable as an AIE-DDxBench reference answer. The review concerns scientific correctness, molecular identity, source grounding, mechanism coverage, and internal consistency. It does not assess whether the hidden answer could be inferred from SMILES alone.
+Determine whether the JSON is suitable as an AIE-DDxBench reference answer. Focus on scientific correctness, molecular identity, source grounding, mechanism coverage, and semantic consistency. Deterministic local checks already validate schema structure, identifier uniqueness, reference resolution, the locked SMILES, the canonical public task, and quotation anchoring. Report a visible structural issue if present, but do not make deterministic checks the main focus.
 
-Use only facts present in the three artifacts. If an item cannot be verified, mark it `unclear`, `unverifiable`, or `UNVERIFIABLE` as appropriate. Do not reveal chain-of-thought. Return only the completed review template.
+Use only facts in the supplied artifacts. Mark information that cannot be verified as `UNVERIFIABLE`. Do not reveal chain-of-thought. Return only the completed review template.
 
-## 0. Canonical mechanism vocabulary
+## 1. Mechanism vocabulary and evidential boundaries
 
-Ordinary `reference_diagnosis_units[].mechanism` values and core `mechanism_links` must use one of these 11 mechanism families:
+Ordinary mechanisms and core evidence links must use one of these 11 families:
 
 ```text
 AGGREGATE_EXCITON_EXCIMER
@@ -30,164 +31,89 @@ SOKR_ANTI_KASHA
 TRIPLET_METAL_ENERGY_TRANSFER
 ```
 
-The reserved label below is permitted only for the integrated final synthesis:
+`FINAL_EVIDENCE_GROUNDED_DIAGNOSIS` is reserved for the integrated final synthesis. Subtype terms such as TICT, RIR, TADF, RTP, TTA, J-aggregate, excimer, and PET belong in context, conclusions, or notes when a canonical family is required. Describe a source-supported mechanism outside the vocabulary as out of scope rather than forcing it into an incorrect family.
 
-```text
-FINAL_EVIDENCE_GROUNDED_DIAGNOSIS
-```
-
-Subtype terms such as TICT, RIR, TADF, RTP, TTA, J-aggregate, excimer, and PET belong in context, conclusions, or notes when a canonical family is required. A source-supported mechanism outside the 11-family vocabulary must be described as out of scope rather than forced into an incorrect family. Do not mark an out-of-scope mechanism as rejected merely because it is outside the vocabulary.
-
-If the source's central mechanism is outside the vocabulary and no in-scope primary or co-primary mechanism is adequately supported, the case is not usable for the current benchmark and should receive `CASE_NOT_USABLE` and `REBUILD_OR_DROP`. An out-of-scope secondary context does not invalidate an otherwise well-grounded in-scope case.
-
-## 0A. Evidence boundaries for the 11 families
-
-Use the following boundaries to identify overclaiming, omission, or misclassification.
+The boundaries below are evidential guidelines, not mandatory checklists. A mechanism may be supported by other source-specific causal evidence of comparable strength. Do not reject a diagnosis solely because the paper lacks one example evidence type listed below.
 
 ### `AGGREGATE_EXCITON_EXCIMER`
 
-Covers aggregate excitons, excimer or aggregate emission, J/H aggregation, excitonic coupling, and aggregation-induced new emissive states. Aggregation, concentration increase, solid-state emission change, red shift, or a new band alone does not establish this family. Stronger support normally requires a state assignment plus concentration dependence, excitation spectra, lifetime or kinetic evidence, close packing, or calculations.
+Covers aggregate excitons, excimer or aggregate emission, J/H aggregation, excitonic coupling, and aggregation-induced emissive states. Aggregation, concentration increase, a solid-state change, a red shift, or a new band alone is insufficient without a state assignment or comparably direct causal evidence.
 
 ### `ESIPT_PT`
 
-Covers excited-state proton transfer, tautomeric emission, and enol/keto proton-transfer pathways. Dual emission, a large Stokes shift, hydrogen bonding, or solvent response is suggestive but not conclusive. Strong support normally requires tautomer or proton-transfer-state assignment, isotope effects, structural blocking, time-resolved evidence, or an excited-state potential-energy surface.
+Covers excited-state proton transfer, tautomeric emission, and enol/keto proton-transfer pathways. Dual emission, a large Stokes shift, hydrogen bonding, or solvent response alone is insufficient without a proton-transfer or tautomer-state connection.
 
 ### `HOST_GUEST_INTERACTION`
 
-Covers host-guest binding, inclusion, association, recognition, or supramolecular complexation that changes emission. Evidence must support both complex formation and a connection between binding and the photophysical change. Simple mixing, doping, matrix restriction, or brightening after host addition is insufficient.
+Covers host-guest binding, inclusion, association, recognition, or supramolecular complexation that changes emission. Evidence must support both complex formation and its connection to the photophysical change.
 
 ### `ICT_TICT_CT`
 
-Covers intramolecular charge transfer, TICT, competition between local and charge-transfer states, polarity-dependent emission, and donor-acceptor torsion. A donor-acceptor structure or solvent-polarity response may support general ICT/CT but does not by itself establish TICT. TICT requires evidence for torsion, rotational freedom, or a twisted-state assignment. PET, ESIPT, and generic aggregate emission must not be relabeled as ICT without support.
+Covers intramolecular charge transfer, TICT, competition between local and charge-transfer states, polarity-dependent emission, and donor-acceptor torsion. Donor-acceptor structure or polarity response may support general ICT/CT but does not establish TICT without evidence for torsion or a twisted-state assignment.
 
 ### `PACKING_HOST_MATRIX_CONFINEMENT`
 
-Covers crystal packing, host or matrix effects, rigid environments, confinement, and related environmental control of emission. The source must connect a specific phase, packing arrangement, host, matrix, cavity, loading, or rigid environment to the photophysical change. Oxygen sensitivity, aggregation enhancement, or RIM alone is insufficient.
+Covers crystal packing, host or matrix effects, rigid environments, and confinement. The source must connect a specific phase, packing arrangement, host, matrix, cavity, loading, or rigid environment to the photophysical change.
 
 ### `PET_ET`
 
-Covers photoinduced electron transfer, electron or hole transfer, charge-separated states, and redox-controlled quenching or recovery. Generic fluorescence quenching, donor-acceptor structure, CT character, or electron-density redistribution alone is insufficient. Strong support normally identifies transfer direction or redox feasibility and may include radical ions, transient signals, lifetime changes, structural controls, or gated recovery. Do not confuse electron transfer with emissive ICT or energy transfer.
+Covers photoinduced electron transfer, electron or hole transfer, charge-separated states, and redox-controlled quenching or recovery. Generic quenching, donor-acceptor structure, CT character, or electron-density redistribution alone is insufficient. Do not confuse electron transfer with emissive ICT or energy transfer.
 
 ### `RACI_CI_ACCESS`
 
-Covers altered access to a conical intersection or closely related crossing that controls nonradiative decay. Strong support includes an explicitly located intersection, a potential-energy surface, dynamics, or a demonstrated structural coordinate controlling access. Low quantum yield, flexibility, or a small energy gap alone is insufficient.
+Covers altered access to a conical intersection or related crossing that controls nonradiative decay. Low quantum yield, flexibility, or a small energy gap alone is insufficient without a located crossing, relevant potential-energy surface, dynamics, or a demonstrated structural coordinate controlling access.
 
 ### `RADIATIVE_RATE_STATE_BALANCE`
 
-Covers radiative and nonradiative rates, oscillator strength, state population, branching, ISC/rISC, and related state balance. A lifetime, quantum yield, or statement that radiative decay increases does not by itself establish this family. Strong support normally includes paired quantum yield and lifetime, direct kinetic analysis, oscillator strength, state ordering, population branching, or ISC/rISC data. Do not equate an apparent lifetime with a microscopic rate. A downstream rate change caused by another mechanism should be labeled as a downstream readout or descriptor rather than automatically made primary.
+Covers radiative and nonradiative rates, oscillator strength, state population, branching, ISC/rISC, and related state balance. A lifetime, quantum yield, or statement that radiative decay increases does not by itself establish this family. Do not equate an apparent lifetime with a microscopic rate.
+
+A downstream or descriptor mechanism may be `supported` only when the source explicitly supports the stated photophysical relationship, rate change, state balance, or readout. It must not receive a primary or co-primary causal role or determine the primary archive mechanism without corresponding causal evidence.
 
 ### `RIM_RIR_RIV`
 
-Covers restriction of intramolecular motion, rotation, vibration, or conformational freedom that suppresses nonradiative decay. Aggregation, crystallization, solid-state enhancement, or rigidity alone is insufficient. The source must connect the emission change to restricted motion through viscosity, temperature, rotor controls, structural comparisons, crystal geometry, kinetics, or calculations.
+Covers restriction of intramolecular motion, rotation, vibration, or conformational freedom that suppresses nonradiative decay. Aggregation, crystallization, source-labeled AIE, rigidity, solid-state enhancement, or fluorescence turn-on alone is insufficient without a motion-specific connection.
 
-If the JSON marks `RIM_RIR_RIV` as `supported` but the supplied source evidence establishes only aggregation, crystallization, source-labeled AIE, or fluorescence turn-on without a motion-restriction link, treat this as a limited evidence overclaim requiring `NEEDS_MINOR_FIX`. Do not reduce it to a release-ready caveat unless another source passage provides the missing motion-specific connection.
+If `RIM_RIR_RIV` is marked `supported` without that connection, mark the diagnosis `OVERCLAIMED`. The overall decision should normally be `NEEDS_MINOR_FIX` because the diagnosis requires a limited substantive correction. Use `FAIL_OR_REBUILD` only when unsupported RIM is central and the remaining evidence cannot support a reliable in-scope case.
 
 ### `SOKR_ANTI_KASHA`
 
-Covers anti-Kasha or upper-state emission, including clearly assigned higher singlet or triplet emission. Reliable state assignment and evidence for a high-state radiative channel are required. A high-energy shoulder, hot band, vibronic band, unusual wavelength, or ordinary T1 phosphorescence is insufficient.
+Covers anti-Kasha or upper-state emission. A reliable state assignment and evidence for a higher-state radiative channel are required. A high-energy shoulder, hot band, vibronic band, unusual wavelength, or ordinary T1 phosphorescence alone is insufficient.
 
 ### `TRIPLET_METAL_ENERGY_TRANSFER`
 
-Covers triplet pathways, RTP or phosphorescence, TADF/rISC, heavy-atom or metal-enhanced ISC, and triplet energy transfer or sensitization. Support may come from delayed emission, oxygen and temperature effects, transient absorption, EPR, state energetics, kinetics, or causal metal controls. Evidence for a generic triplet pathway does not automatically establish RTP, TADF, triplet energy transfer, or a metal-mediated pathway. A metal atom, heavy atom, long lifetime, small singlet-triplet gap, or delayed emission alone is insufficient.
+Covers triplet pathways, RTP or phosphorescence, TADF/rISC, heavy-atom or metal-enhanced ISC, and triplet energy transfer or sensitization. A metal atom, heavy atom, long lifetime, small singlet-triplet gap, or delayed emission alone does not establish a specific triplet subtype or causal pathway.
 
-## 1. Artifact correspondence
+## 2. Artifact correspondence and public boundary
 
-Confirm that all three artifacts describe the same source paper and target molecule, component, or material entity.
+Confirm that the artifacts describe the same paper and exact target molecule, component, or material entity. Check title, DOI, candidate identifier, molecule label, structure, target role, sample, phase, and experimental context. Distinguish the target from analogues, controls, isomers, complexes, hosts, guests, ligands, counterions, and other entities in the paper.
 
-Check:
+Absence of a DOI string from `source.md` is not a mismatch when title, structure, target identity, and context correspond. Use `SOURCE_UNCLEAR` when the paper but not the target can be matched. Use `SOURCE_MISMATCH` when the artifacts point to different targets.
 
-- whether the title, DOI, candidate identifier, molecule label, and case identity in JSON correspond to `source.md`;
-- whether the current target can be distinguished from analogues, controls, isomers, metal complexes, host/guest components, counterions, or other entities in the same paper;
-- whether `structure_match.png` compares the source-paper target structure with the RDKit depiction of the public SMILES;
-- whether evidence is attached to the target rather than to another molecule, phase, sample, or condition.
-
-Absence of a DOI string from `source.md` is not by itself a mismatch when title, target identity, structure, and experimental context correspond. If only the paper can be matched but not the target, use `SOURCE_UNCLEAR`. If the artifacts point to different targets, use `SOURCE_MISMATCH` or `SMILES_WRONG`.
-
-Labels:
+`public_input` may contain only the verified SMILES structure and this exact generic task:
 
 ```text
-SOURCE_MATCH
-SOURCE_MATCH_WITH_DOI_MISSING
-SOURCE_UNCLEAR
-SOURCE_MISMATCH
+Starting from the SMILES structure only, autonomously investigate possible AIE/photophysical mechanisms. Report generated evidence, supported mechanisms, weakened or rejected mechanisms, underdetermined mechanisms, necessary wet-lab follow-ups, and a final evidence-grounded mechanistic diagnosis.
 ```
 
-## 2. JSON schema
+It must not expose article metadata, molecule names, labels, mechanism labels, experimental findings, or other answer cues.
 
-Check the v0.4 raw-case structure. The top level should contain only:
+## 3. Molecular identity and SMILES
 
-```text
-case_id
-version
-track
-public_input
-hidden_reference
-```
+Determine whether `public_input.molecule.structure.value` represents the exact target. Use all supplied artifacts, including structure images, labels, schemes, captions, names, formulas, and surrounding text.
 
-`hidden_reference` should contain:
+Check scaffold and bond connectivity, linker length, substituent identity and position, heteroatoms, formal charge, explicitly specified stereochemistry, protonation, tautomerism, coordination state, counterions, and required components. For metal-containing or multicomponent systems, distinguish the complete target from a ligand, host, guest, fragment, or convenience representation.
 
-```text
-source_article
-reference_evidence_units
-reference_diagnosis_units
-```
+Use `SMILES_UNVERIFIABLE_FROM_PROVIDED_ARTIFACTS` only when the structure comparison image is missing, cropped, unreadable, or insufficient and the remaining supplied artifacts do not independently resolve identity. Record acceptable representation or source limitations under `Non-blocking limitations`; do not create a separate identity state for them.
 
-The final synthesis must be one diagnosis unit with mechanism `FINAL_EVIDENCE_GROUNDED_DIAGNOSIS`, not an additional top-level field.
+## 4. Evidence review
 
-Labels:
+Review every `reference_evidence_unit`, including units not referenced by a diagnosis. For each unit, check the factual claim, quotation anchor, mechanistic interpretation, evidence strength, target identity, sample and condition scope, and whether indirect analogue or family-level evidence is labeled appropriately.
 
-```text
-SCHEMA_OK
-SCHEMA_MINOR_ISSUE
-SCHEMA_INVALID
-```
+A quotation is a source locator and need not contain every interpretive phrase. Nearby text, captions, tables, and other explicit source content may jointly support a claim. OCR, line-break, hyphenation, Unicode, superscript, and punctuation differences are not substantive errors.
 
-## 3. Public-input boundary
+Review unreferenced evidence separately. An unreferenced unit is not automatically an error. Require a change only when it is redundant, irrelevant, misleading, or should materially support an existing diagnosis.
 
-Check that `public_input` contains only the verified SMILES structure and the canonical generic task. It must not reveal article metadata, molecule names, labels, isomer identity, mechanism labels, experimental findings, spectra, lifetimes, quantum yields, packing, binding, or other answer cues.
-
-Labels:
-
-```text
-PUBLIC_INPUT_OK
-PUBLIC_INPUT_LEAKAGE
-PUBLIC_INPUT_UNCLEAR
-```
-
-## 4. Molecular identity and SMILES
-
-Determine whether `public_input.molecule.structure.value` represents the exact target defined by the source. Use `structure_match.png`, labels, figures, schemes, captions, names, formulas, and surrounding text in `source.md`.
-
-Check scaffold and bond connectivity, linker length, substituent identity and position, heteroatoms, formal charge, explicitly specified stereochemistry, protonation, tautomerism, salt form, coordination state, counterions, and required components. For metal-containing or multicomponent systems, distinguish the complete target from a ligand, host, guest, fragment, or dot-disconnected convenience representation.
-
-Provide a target identity summary based only on the artifacts. A useful stable identity key combines normalized DOI, target label, visible or canonical SMILES, and target role. The key supports later duplicate auditing but must not replace the artifact-level identity review.
-
-Labels:
-
-```text
-SMILES_OK
-SMILES_OK_WITH_CAVEAT
-SMILES_UNCLEAR_NEEDS_IMAGE_CHECK
-SMILES_WRONG
-```
-
-## 5. Evidence units
-
-Review every evidence unit used by a primary, co-primary, strong secondary, weakened/rejected, underdetermined, or final-synthesis diagnosis.
-
-For each core unit, check:
-
-- uniqueness of `evidence_id`;
-- whether the central factual claim is supported by `source.md`;
-- whether `paper_quote` can be located as a source anchor;
-- whether the mechanistic interpretation matches the evidence strength;
-- whether the claim belongs to the correct target molecule, species, sample, phase, host/guest ratio, solvent, temperature, excitation condition, or other context;
-- whether analogue or family-level evidence is explicitly marked as indirect;
-- whether omitted figures, tables, spectra, or numerical values make the claim unverifiable.
-
-A quote is a source locator and need not contain every interpretive phrase in the claim. Nearby text, captions, tables, and other explicit source content may jointly support the claim. OCR, line-break, hyphenation, Unicode, superscript, and punctuation differences are not substantive errors.
-
-Use `PARTLY_SUPPORTED` only when a material fact or conclusion is supported only in part. Use `NOT_FOUND` when the source lacks the claimed fact. Use `OVERCLAIMED` when a weak observation is upgraded to a specific or exclusionary mechanism without support. Use `UNVERIFIABLE` when the source refers to evidence that is absent from the supplied parsed material.
+Only evidence that materially supports or affects a primary, co-primary, supported secondary, weakened-or-rejected, underdetermined, or final diagnosis may determine the overall evidence label and overall decision. A minor issue in non-material background evidence must not by itself downgrade the case.
 
 Per-unit labels:
 
@@ -199,44 +125,25 @@ NOT_FOUND
 UNVERIFIABLE
 ```
 
-Overall labels:
+For the overall evidence label, use the most severe material result:
 
 ```text
-EVIDENCE_SUPPORTED
-EVIDENCE_PARTLY_SUPPORTED
-EVIDENCE_OVERCLAIMED
 EVIDENCE_NOT_FOUND
-EVIDENCE_UNVERIFIABLE_FROM_PROVIDED_FILES
+> EVIDENCE_OVERCLAIMED
+> EVIDENCE_UNVERIFIABLE_FROM_PROVIDED_FILES
+> EVIDENCE_PARTLY_SUPPORTED
+> EVIDENCE_SUPPORTED
 ```
 
-## 6. Diagnosis units
+## 5. Diagnosis review
 
-Review every diagnosis unit, including the final synthesis.
+Review every diagnosis unit, including the final synthesis. Check canonical mechanism membership, target and condition scope, consistency among `reference_status`, `diagnosis_role`, `expert_conclusion`, and `supporting_evidence_ids`, the relevance and strength of supporting evidence, and omission or misrepresentation of important source-discussed mechanisms.
 
-Check:
+Allowed statuses are `supported`, `weakened_or_rejected`, and `underdetermined`. `diagnosis_role` is free text; accept harmless wording and synonym differences when the role is semantically consistent with status and conclusion.
 
-- uniqueness of `diagnosis_id`;
-- canonical mechanism membership or correct use of the final-synthesis label;
-- target and condition scope in `context`;
-- consistency between `reference_status`, `diagnosis_role`, `expert_conclusion`, and `supporting_evidence_ids`;
-- whether supporting evidence exists and is relevant;
-- whether a weak clue is overstated as strong support;
-- whether primary, co-primary, secondary, contextual, downstream, weakened, rejected, and underdetermined roles are distinguished;
-- whether important source-discussed competing mechanisms are omitted or misrepresented.
+For ordinary mechanisms, `supported` may express primary, co-primary, secondary, contextual, enabling, downstream, or descriptor meaning, subject to the causal restrictions above. `weakened_or_rejected` must express a weakened, rejected, excluded, unsupported, or contrastive meaning. `underdetermined` must express unresolved, scope-limited, untested, or missing-evidence meaning.
 
-Allowed status values are:
-
-```text
-supported
-weakened_or_rejected
-underdetermined
-```
-
-`diagnosis_role` is free text. Do not flag harmless wording, length, underscore, spacing, or synonym differences when the role is semantically consistent with status and conclusion.
-
-For ordinary mechanisms, `supported` must have a supported primary, co-primary, secondary, contextual, enabling, downstream, or descriptor meaning. `weakened_or_rejected` must express weakened, rejected, excluded, unsupported, contrastive, or not-supported meaning. `underdetermined` must express unresolved, follow-up, scope-limited, untested, or missing-evidence meaning.
-
-The final unit must use mechanism `FINAL_EVIDENCE_GROUNDED_DIAGNOSIS` and a role that clearly expresses final, integrated, synthesis, or overall diagnosis. Its role need not equal the literal string `final_synthesis`.
+The final unit must use `FINAL_EVIDENCE_GROUNDED_DIAGNOSIS` and summarize only the role categories actually present or materially relevant. It need not mention absent categories.
 
 Per-unit labels:
 
@@ -248,67 +155,35 @@ INCOMPLETE
 INCONSISTENT
 ```
 
-Overall labels:
+For the overall diagnosis label, use the most severe material result:
 
 ```text
-DIAGNOSIS_UNITS_OK
-DIAGNOSIS_UNITS_MINOR_ISSUE
-DIAGNOSIS_UNITS_OVERCLAIMED
-DIAGNOSIS_UNITS_INCOMPLETE
 DIAGNOSIS_UNITS_INCONSISTENT
+> DIAGNOSIS_UNITS_OVERCLAIMED
+> DIAGNOSIS_UNITS_INCOMPLETE
+> DIAGNOSIS_UNITS_MINOR_ISSUE
+> DIAGNOSIS_UNITS_OK
 ```
 
-## 7. Mechanism-set completeness and archive assignment
+## 6. Mechanism set, archive assignment, and final synthesis
 
-Check whether the JSON covers the important mechanisms that the source explicitly supports, weakens, rejects, compares, or leaves unresolved. Do not demand every theoretically plausible mechanism, and do not infer new diagnoses from structure alone.
+Check whether all materially source-discussed mechanisms and remaining uncertainties are represented at the correct status and role. `MECHANISM_SET_COMPLETE` does not mean every mechanistic question is resolved. It means the JSON represents all material source content correctly and requires no field change.
 
-The archive mechanism supplied in the request must be compared with the source-supported diagnosis. Retrieval, download, folder, and screening labels are discovery provenance, not final annotations. Recommend the best primary archive mechanism based on the strongest source-supported causal primary or co-primary mechanism. If several mechanisms are co-primary, any one may be used for archive placement provided that the multi-mechanism relationship remains explicit.
+Compare the current archive mechanism supplied in the request with the strongest source-supported causal primary or co-primary diagnosis. A downstream, descriptor, contextual, weakened, rejected, underdetermined, or unsupported mechanism must not determine the primary archive assignment. Retrieval and screening labels are provenance, not final annotations.
 
-If the current archive mechanism is only contextual, downstream, weakened/rejected, underdetermined, or unsupported, state the recommended canonical destination. Cross-case duplication is handled separately and is not required in this single-case review.
+Check that the final synthesis reflects the evidence and diagnosis units, separates supported conclusions from uncertainty, and preserves material target, sample, phase, environment, state-assignment, and kinetic scope. It need only distinguish roles that are present or materially relevant.
 
-Labels:
+## 7. Overall decision
 
-```text
-MECHANISM_SET_COMPLETE
-MECHANISM_SET_COMPLETE_WITH_CAVEAT
-MECHANISM_SET_MINOR_ISSUE
-MECHANISM_SET_INCOMPLETE
-MECHANISM_SET_WRONG
-```
+Apply this decision test:
 
-Vocabulary labels:
+1. If no JSON field must be changed for release, use `PASS`.
+2. If limited field-level changes are required while molecular identity, core evidence, and the central interpretation remain reliable, use `NEEDS_MINOR_FIX`.
+3. If reliability requires replacing the target identity, rebuilding core evidence, or substantially reconstructing the central mechanism diagnosis, use `FAIL_OR_REBUILD`.
 
-```text
-MECHANISM_VOCAB_OK
-MECHANISM_VOCAB_MINOR_ISSUE
-MECHANISM_VOCAB_OUT_OF_SCOPE_HANDLED
-MECHANISM_VOCAB_INVALID
-```
+Correctly represented uncertainty or source limitation is not a required field change. Stylistic role names, adequate short quotations, formatting or OCR variation, and appropriately qualified indirect evidence do not require a change.
 
-## 8. Final synthesis
-
-Check that the integrated diagnosis accurately summarizes the evidence and diagnosis units. It should distinguish primary, co-primary, secondary, contextual, downstream, weakened, rejected, and underdetermined mechanisms; separate demonstrated conclusions from unresolved interpretations; avoid unsupported strong claims; and preserve sample, phase, environment, state-assignment, or kinetic caveats when they materially limit the conclusion.
-
-Labels:
-
-```text
-FINAL_SYNTHESIS_OK
-FINAL_SYNTHESIS_OVERCLAIMED
-FINAL_SYNTHESIS_INCOMPLETE
-FINAL_SYNTHESIS_INCONSISTENT
-```
-
-## 9. Overall usability and decision calibration
-
-Use `FAIL_OR_REBUILD` when the case cannot be made reliable through a limited correction. Examples include a source mismatch, an incorrect molecular identity or SMILES, fabricated or missing core evidence, a severely incorrect mechanism set, an internally contradictory synthesis, unrecoverable answer leakage, or artifacts that are too incomplete to verify.
-
-Use `NEEDS_MINOR_FIX` when the case is fundamentally recoverable but requires a limited substantive correction. Examples include removable leakage, an evidence overclaim, an incorrect evidence status or diagnosis role, a missing material limitation, an inaccurate quotation or evidence link, or a secondary mechanism incorrectly assigned as primary.
-
-Do not assign `NEEDS_MINOR_FIX` merely for stylistic role names, short but adequate quotes, explanations placed in a different evidence field, formatting or OCR variation, or clearly marked indirect analogue evidence used at an appropriate strength.
-
-Use `PASS` when the molecular identity, core evidence, evidence links, mechanism diagnoses, and final synthesis are reliable and no mandatory correction is required. A passing case may still contain source limitations, condition-specific scope, or uncertainty in secondary and alternative mechanisms. Record these limitations in the review notes. They do not create a separate overall decision when the reference already represents them accurately.
-
-Do not assign `NEEDS_MINOR_FIX` merely because the source does not test every alternative mechanism, because a secondary mechanism remains underdetermined, or because the molecular representation omits a component that is not part of the defined target molecule. Use `PASS` when these limitations are already represented at the correct evidential strength and do not require a change to the benchmark reference.
+For `PASS` and `NEEDS_MINOR_FIX`, every entry under `Blocking issues` must be `None`. Limited mandatory corrections belong under `Required field changes`. Blocking issues are reserved for `FAIL_OR_REBUILD` and must identify what prevents reliability through limited field-level correction.
 
 The decision, usability, and disposition must follow one of these combinations:
 
@@ -321,7 +196,7 @@ FAIL_OR_REBUILD  -> CASE_NOT_USABLE         -> REBUILD_OR_DROP
 
 ## Required output template
 
-Review all core evidence units and every diagnosis unit. Repeat the item blocks as needed. Do not fabricate an evidence identifier when a diagnosis has no supporting evidence.
+Review every evidence unit and diagnosis unit. Repeat item blocks as needed. List only mandatory JSON changes under `Required field changes`; place accurately represented source limitations and uncertainty under `Non-blocking limitations`.
 
 ```text
 overall_decision:
@@ -344,24 +219,29 @@ PUBLIC_INPUT_OK / PUBLIC_INPUT_LEAKAGE / PUBLIC_INPUT_UNCLEAR
 notes:
 
 4. SMILES and target identity:
-SMILES_OK / SMILES_OK_WITH_CAVEAT / SMILES_UNCLEAR_NEEDS_IMAGE_CHECK / SMILES_WRONG
+SMILES_OK / SMILES_UNVERIFIABLE_FROM_PROVIDED_ARTIFACTS / SMILES_WRONG
 target_identity_summary:
-stable_identity_key:
-duplicate_relevance_notes:
 notes:
 
 5. Evidence units overall:
 EVIDENCE_SUPPORTED / EVIDENCE_PARTLY_SUPPORTED / EVIDENCE_OVERCLAIMED / EVIDENCE_NOT_FOUND / EVIDENCE_UNVERIFIABLE_FROM_PROVIDED_FILES
 notes:
 
-6. Core evidence review:
+6. Evidence-unit review:
 - evidence id:
   status: SUPPORTED / PARTLY_SUPPORTED / OVERCLAIMED / NOT_FOUND / UNVERIFIABLE
+  materially_used: yes / no
   used_by_diagnosis:
   notes:
-- repeat until all core evidence has been reviewed
+- repeat until every evidence unit has been reviewed
 
-7. Diagnosis-unit review:
+7. Unreferenced evidence units:
+- evidence id: None / ...
+  materiality:
+  required_action: None / ...
+  notes:
+
+8. Diagnosis-unit review:
 - diagnosis id:
   mechanism:
   reference_status:
@@ -370,39 +250,48 @@ notes:
   notes:
 - repeat until every diagnosis unit, including the final synthesis, has been reviewed
 
-8. Diagnosis units overall:
+9. Diagnosis units overall:
 DIAGNOSIS_UNITS_OK / DIAGNOSIS_UNITS_MINOR_ISSUE / DIAGNOSIS_UNITS_OVERCLAIMED / DIAGNOSIS_UNITS_INCOMPLETE / DIAGNOSIS_UNITS_INCONSISTENT
 notes:
 
-9. Mechanism-set completeness:
-MECHANISM_SET_COMPLETE / MECHANISM_SET_COMPLETE_WITH_CAVEAT / MECHANISM_SET_MINOR_ISSUE / MECHANISM_SET_INCOMPLETE / MECHANISM_SET_WRONG
+10. Mechanism-set completeness:
+MECHANISM_SET_COMPLETE / MECHANISM_SET_MINOR_ISSUE / MECHANISM_SET_INCOMPLETE / MECHANISM_SET_WRONG
+current_archive_mechanism:
+archive_assignment_assessment:
 recommended_primary_archive_mechanism:
 notes:
 
-10. Mechanism vocabulary:
+11. Mechanism vocabulary:
 MECHANISM_VOCAB_OK / MECHANISM_VOCAB_MINOR_ISSUE / MECHANISM_VOCAB_OUT_OF_SCOPE_HANDLED / MECHANISM_VOCAB_INVALID
 notes:
 
-11. Final synthesis:
+12. Final synthesis:
 FINAL_SYNTHESIS_OK / FINAL_SYNTHESIS_OVERCLAIMED / FINAL_SYNTHESIS_INCOMPLETE / FINAL_SYNTHESIS_INCONSISTENT
 notes:
 
-12. Overall case usability:
+13. Overall case usability:
 CASE_USABLE / CASE_NEEDS_MINOR_FIX / CASE_NEEDS_MAJOR_REPAIR / CASE_NOT_USABLE
 notes:
 
-13. Blocking issues:
-- blocker 1: None / ...
-- blocker 2: None / ...
+14. Blocking issues:
+- blocker: None / ...
 
-14. Required field changes:
+15. Required field changes:
 - JSON path: None / ...
-- current problem: None / ...
-- recommended fix: None / ...
+  current value:
+  current problem:
+  recommended replacement:
+  reason:
+- repeat for every mandatory field change
 
-15. Disposition:
+16. Non-blocking limitations:
+- limitation: None / ...
+  affected scope:
+  notes:
+
+17. Disposition:
 KEEP / MINOR_FIX_THEN_KEEP / MAJOR_REPAIR / REBUILD_OR_DROP
 notes:
 
-One-sentence summary:
+18. One-sentence summary:
 ```
