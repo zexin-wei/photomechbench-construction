@@ -23,7 +23,7 @@ from .reference import ReferenceTask, run_reference_construction
 from .review import ReviewCase, run_independent_review
 from .screening import ParsedPaper, candidate_manifest_rows, run_candidate_screen, run_paper_screen
 from .structure import StructureTask, run_structure_resolution
-from .vocabulary import ACCEPTED_REVIEW_DECISIONS, OFFICIAL_MECHANISM_SET
+from .vocabulary import OFFICIAL_MECHANISM_SET
 
 def run_manifest_pipeline(
     manifest_path: Path,
@@ -175,14 +175,9 @@ def run_manifest_pipeline(
         delivery = case_root / "04_reference" / "delivery"
         review_case = ReviewCase.from_directory(delivery, archive_mechanism=str(row["archive_mechanism"]))
         review = run_independent_review(review_case, output_dir=case_root / "05_review", client=client, resume=resume)
-        review_status = "rejected" if review.decision == "FAIL_OR_REBUILD" else review.status
-        results.append({"item_type": "case", "item_id": case_id, "stage": "review", "status": review_status, "decision": review.decision, "error": review.error})
+        results.append({"item_type": "case", "item_id": case_id, "stage": "review", "status": review.status, "decision": review.decision, "error": review.error})
         if review.status == "failed" and not keep_going:
             break
-        if review.decision == "FAIL_OR_REBUILD":
-            if not keep_going:
-                break
-            continue
         if review.decision == "NEEDS_MINOR_FIX":
             lock_path = structure_dir / "locked_structure.json"
             lock = json.loads(lock_path.read_text(encoding="utf-8"))
@@ -207,15 +202,8 @@ def run_manifest_pipeline(
             if repair.packaged_for_rereview:
                 repaired_case = ReviewCase.from_directory(repair.output_dir / "rereview_input", archive_mechanism=str(row["archive_mechanism"]))
                 rereview = run_independent_review(repaired_case, output_dir=case_root / "07_rereview", client=client, resume=resume)
-                rereview_status = (
-                    rereview.status
-                    if rereview.decision in ACCEPTED_REVIEW_DECISIONS
-                    else "rejected"
-                )
-                results.append({"item_type": "case", "item_id": case_id, "stage": "rereview", "status": rereview_status, "decision": rereview.decision, "error": rereview.error})
+                results.append({"item_type": "case", "item_id": case_id, "stage": "rereview", "status": rereview.status, "decision": rereview.decision, "error": rereview.error})
                 if rereview.status == "failed" and not keep_going:
-                    break
-                if rereview.decision not in ACCEPTED_REVIEW_DECISIONS and not keep_going:
                     break
             elif not keep_going:
                 break
@@ -375,7 +363,7 @@ def _resolve(manifest_path: Path, value: str) -> Path:
 
 
 def _finish(output_root: Path, results: list[dict[str, Any]]) -> dict[str, Any]:
-    summary = {"result_count": len(results), "failure_count": sum(row.get("status") in {"failed", "failed_gate", "not_confirmed", "rejected"} for row in results), "results": results}
+    summary = {"result_count": len(results), "failure_count": sum(row.get("status") in {"failed", "failed_gate", "not_confirmed"} for row in results), "results": results}
     _write_json(output_root / "pipeline_summary.json", summary)
     return summary
 
