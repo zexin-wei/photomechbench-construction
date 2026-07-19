@@ -88,7 +88,7 @@ See `.env.example` for variable names only.
 
 ## Ready-to-Use Examples
 
-The release includes four user-facing starting points:
+The release includes five user-facing starting points:
 
 - `examples/run_pipeline.template.ps1`: a provider-configurable PowerShell
   command template for the complete automated pipeline.
@@ -119,12 +119,13 @@ After installation, the generic command template can be invoked as follows:
   -Model your-model-id `
   -BaseUrl https://provider.example/v1 `
   -ApiKeyEnvironment OPENAI_API_KEY `
-  -ApiProtocol responses `
-  -RdkitCondaEnvironment your-rdkit-environment
+  -ApiProtocol responses
 ```
 
 Provider names, endpoints, models, API-key variable names, and RDKit runtime
-names are deployment settings rather than fixed pipeline values.
+names are deployment settings rather than fixed pipeline values. Add
+`-RdkitCondaEnvironment your-rdkit-environment` only when RDKit must be reused
+from a different Conda environment.
 
 ## MinerU VLM API
 
