@@ -19,7 +19,7 @@ from .provider import ModelClient
 from .vocabulary import REVIEW_DECISIONS
 
 DECISION_PATTERN = re.compile(
-    r"(?im)^\s*overall_decision\s*:\s*(NEEDS_MINOR_FIX|FAIL_OR_REBUILD|PASS)\s*$"
+    r"(?im)^\s*overall_decision\s*:\s*(PASS_WITH_CAVEAT|NEEDS_MINOR_FIX|FAIL_OR_REBUILD|PASS)\s*$"
 )
 
 

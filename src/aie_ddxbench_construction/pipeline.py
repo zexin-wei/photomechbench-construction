@@ -23,7 +23,7 @@ from .reference import ReferenceTask, run_reference_construction
 from .review import ReviewCase, run_independent_review
 from .screening import ParsedPaper, candidate_manifest_rows, run_candidate_screen, run_paper_screen
 from .structure import StructureTask, run_structure_resolution
-from .vocabulary import OFFICIAL_MECHANISM_SET
+from .vocabulary import ACCEPTED_REVIEW_DECISIONS, OFFICIAL_MECHANISM_SET
 
 def run_manifest_pipeline(
     manifest_path: Path,
@@ -207,11 +207,15 @@ def run_manifest_pipeline(
             if repair.packaged_for_rereview:
                 repaired_case = ReviewCase.from_directory(repair.output_dir / "rereview_input", archive_mechanism=str(row["archive_mechanism"]))
                 rereview = run_independent_review(repaired_case, output_dir=case_root / "07_rereview", client=client, resume=resume)
-                rereview_status = rereview.status if rereview.decision == "PASS" else "rejected"
+                rereview_status = (
+                    rereview.status
+                    if rereview.decision in ACCEPTED_REVIEW_DECISIONS
+                    else "rejected"
+                )
                 results.append({"item_type": "case", "item_id": case_id, "stage": "rereview", "status": rereview_status, "decision": rereview.decision, "error": rereview.error})
                 if rereview.status == "failed" and not keep_going:
                     break
-                if rereview.decision != "PASS" and not keep_going:
+                if rereview.decision not in ACCEPTED_REVIEW_DECISIONS and not keep_going:
                     break
             elif not keep_going:
                 break
