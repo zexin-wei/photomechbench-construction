@@ -6,4 +6,4 @@ dependencies:
   - rdkit=2022.09.5
   - pip
   - pip:
-      - -e .[test]
+      - -e .

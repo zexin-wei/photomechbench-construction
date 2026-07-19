@@ -17,9 +17,6 @@ dependencies = [
   "requests>=2.31,<3",
 ]
 
-[project.optional-dependencies]
-test = ["pytest>=8,<9"]
-
 [project.scripts]
 aie-ddxbench = "aie_ddxbench_construction.cli:main"
 
@@ -35,6 +32,3 @@ aie_ddxbench_construction = [
   "prompts/*.md",
   "schemas/*.json",
 ]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
