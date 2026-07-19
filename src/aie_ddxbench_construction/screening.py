@@ -22,9 +22,9 @@ SCREENING_SYSTEM_PROMPT = (
 )
 PAPER_SCREEN_PROMPT_VERSION = "paper_screen_v1"
 CANDIDATE_SCREEN_PROMPT_VERSION = "candidate_screen_v1"
-PAPER_VERDICTS = {"candidate", "reserve", "needs_review", "reject"}
+PAPER_VERDICTS = {"pass", "fail"}
 CONCRETE_UNIT_TYPES = {"molecule", "probe", "ligand", "guest"}
-CASE_DECISIONS = {"make_case", "supporting_control", "reserve", "human_review", "reject"}
+CANDIDATE_ELIGIBILITY = {"pass", "fail"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -174,11 +174,11 @@ def validate_paper_review(value: dict[str, Any]) -> list[str]:
     units = value.get("candidate_units")
     if not isinstance(units, list):
         errors.append("candidate_units must be an array")
-    reason = value.get("reject_reason_type")
-    if verdict == "reject" and reason in {None, "", "not_rejected"}:
-        errors.append("reject requires a specific reject_reason_type")
-    if verdict in PAPER_VERDICTS - {"reject"} and reason != "not_rejected":
-        errors.append("non-reject verdict requires reject_reason_type=not_rejected")
+    reason = value.get("failure_reason_type")
+    if verdict == "fail" and reason in {None, "", "not_failed"}:
+        errors.append("fail requires a specific failure_reason_type")
+    if verdict == "pass" and reason != "not_failed":
+        errors.append("pass requires failure_reason_type=not_failed")
     recommendations = value.get("recommended_image_ids")
     if not isinstance(recommendations, list) or not all(isinstance(item, str) for item in recommendations):
         errors.append("recommended_image_ids must be an array of image IDs")
@@ -205,10 +205,10 @@ def validate_candidate_review(
             continue
         if unit.get("unit_type") not in CONCRETE_UNIT_TYPES | {"unclear"}:
             errors.append(f"{prefix}.unit_type is invalid")
-        if unit.get("case_decision") not in CASE_DECISIONS:
-            errors.append(f"{prefix}.case_decision is invalid")
-        if unit.get("case_decision") == "make_case" and unit.get("unit_type") not in CONCRETE_UNIT_TYPES:
-            errors.append(f"{prefix}: make_case requires a concrete single-molecule unit_type")
+        if unit.get("eligibility") not in CANDIDATE_ELIGIBILITY:
+            errors.append(f"{prefix}.eligibility is invalid")
+        if unit.get("eligibility") == "pass" and unit.get("unit_type") not in CONCRETE_UNIT_TYPES:
+            errors.append(f"{prefix}: pass requires a concrete single-molecule unit_type")
         image_ids = unit.get("structure_image_ids")
         if not isinstance(image_ids, list) or not all(isinstance(item, str) for item in image_ids):
             errors.append(f"{prefix}.structure_image_ids must be an array of image IDs")
@@ -240,7 +240,7 @@ def candidate_manifest_rows(reviews: Iterable[dict[str, Any]]) -> list[dict[str,
                 continue
             if unit.get("unit_type") not in CONCRETE_UNIT_TYPES:
                 continue
-            if unit.get("case_decision") not in {"make_case", "human_review"}:
+            if unit.get("eligibility") != "pass":
                 continue
             label = str(unit.get("unit_label") or "").strip()
             if not label:
@@ -251,7 +251,7 @@ def candidate_manifest_rows(reviews: Iterable[dict[str, Any]]) -> list[dict[str,
                     "retrieval_mechanism": review.get("target_discovery_mechanism"),
                     "molecule_label": label,
                     "entity_type": unit.get("unit_type"),
-                    "case_decision": unit.get("case_decision"),
+                    "eligibility": unit.get("eligibility"),
                     "stage3_risk_flags": unit.get("stage3_risk_flags", []),
                     "structure_image_ids": unit.get("structure_image_ids", []),
                     "structure_text_sources": unit.get("structure_text_sources", []),

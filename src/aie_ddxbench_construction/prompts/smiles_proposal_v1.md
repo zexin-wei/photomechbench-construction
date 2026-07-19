@@ -11,4 +11,4 @@ Propose a provisional single-molecule SMILES for the exact target in the paper.
 
 Return exactly one JSON object with `candidate_id`, `molecule_label`, `proposed_smiles`, `source_basis`, `single_molecule_intent`, `same_paper_confusion_risk`, `structure_features_claimed`, `uncertainty_reason`, `final_decision`, and `confidence`.
 
-`source_basis` must be one of `paper_structure_image|paper_text_name|paper_caption|supporting_info_reference|unclear`. `final_decision` must be `proceed_to_rdkit|human_review|reject`.
+`source_basis` must be one of `paper_structure_image|paper_text_name|paper_caption|supporting_info_reference|unclear`. `final_decision` must be `pass|fail`. Use `pass` only when a concrete SMILES is proposed for RDKit and identity validation.

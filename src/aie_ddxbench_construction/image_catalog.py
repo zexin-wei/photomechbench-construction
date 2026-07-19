@@ -19,17 +19,18 @@ CAPTION_LINE_RE = re.compile(r"^(?:fig(?:ure)?|scheme|table)\s*[.]?\s*(?:s?\d+|[
 
 def discover_image_paths(
     *,
-    source_images: Iterable[Path] = (),
-    source_image_dir: Path | None = None,
+    source_image_dir: Path,
 ) -> list[Path]:
-    """Return unique declared images without uploading or interpreting them."""
-    paths = [path.resolve() for path in source_images if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES]
-    if source_image_dir and source_image_dir.is_dir():
-        paths.extend(
+    """Return unique images from the MinerU output directory."""
+    paths = (
+        [
             path.resolve()
             for path in sorted(source_image_dir.rglob("*"))
             if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES
-        )
+        ]
+        if source_image_dir.is_dir()
+        else []
+    )
     unique: dict[str, Path] = {}
     for path in paths:
         unique.setdefault(str(path).lower(), path)

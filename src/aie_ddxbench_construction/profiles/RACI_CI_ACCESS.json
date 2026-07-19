@@ -74,7 +74,7 @@
   "triage_policy": {
     "high": "Original research or primary computational mechanism paper with concrete molecule labels, excited-state pathway evidence, and explicit discussion of conical-intersection/radiationless-decay accessibility.",
     "medium": "Likely primary source with AIE or state-dependent emission and plausible nonradiative decay/PES evidence, but snippets do not fully show molecule-level CI evidence.",
-    "low": "Possibly relevant photophysics paper with weak snippet evidence; reserve only if it can provide useful competing-mechanism or negative-evidence cases.",
+    "low": "Insufficient snippet evidence for automatic inclusion.",
     "reject": "Review, patent, tutorial, generic theory page, database-only result, or paper with no clear molecule-level excited-state mechanism evidence."
   }
 }

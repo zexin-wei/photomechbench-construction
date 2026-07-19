@@ -20,10 +20,6 @@ def parse_pdf_with_mineru_vlm(
     token: str,
     base_url: str | None = None,
     language: str = "en",
-    pages: str | None = None,
-    ocr: bool = False,
-    formula: bool = True,
-    table: bool = True,
     timeout: float = 1800.0,
     resume: bool = False,
 ) -> dict[str, Any]:
@@ -38,10 +34,10 @@ def parse_pdf_with_mineru_vlm(
     options = {
         "model": "vlm",
         "language": language,
-        "pages": pages,
-        "ocr": ocr,
-        "formula": formula,
-        "table": table,
+        "pages": None,
+        "ocr": False,
+        "formula": True,
+        "table": True,
         "timeout": timeout,
         "base_url": base_url,
     }
@@ -78,13 +74,11 @@ def parse_pdf_with_mineru_vlm(
         extract_options = {
             "model": "vlm",
             "language": language,
-            "ocr": ocr,
-            "formula": formula,
-            "table": table,
+            "ocr": False,
+            "formula": True,
+            "table": True,
             "timeout": timeout,
         }
-        if pages:
-            extract_options["pages"] = pages
         with MinerU(**client_options) as client:
             result = client.extract(str(pdf_path), **extract_options)
             result.save_all(str(raw_dir))

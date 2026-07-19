@@ -1,4 +1,4 @@
-"""Bounded minor repair for independently reviewed raw cases."""
+"""Correction of independently reviewed raw cases."""
 
 from __future__ import annotations
 

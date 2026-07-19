@@ -45,8 +45,8 @@ supported variable names but is not loaded automatically.
 
 Copy `examples/pipeline_manifest.example.json` and replace the DOI, title,
 retrieval mechanism, and local PDF path. The retrieval mechanism is only a
-screening hypothesis; it is not used as the final diagnosis. Keep `cases`
-empty so the pipeline can select eligible candidates automatically.
+screening hypothesis; it is not used as the final diagnosis. Eligible cases
+are generated automatically from candidates that pass screening.
 
 ## Run
 

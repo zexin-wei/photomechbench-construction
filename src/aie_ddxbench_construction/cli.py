@@ -21,11 +21,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     pipeline.add_argument("--manifest", type=Path, required=True)
     pipeline.add_argument("--out-root", type=Path, required=True)
-    pipeline.add_argument(
-        "--stop-after",
-        choices=["paper_screen", "candidate_screen", "structure", "reference", "review"],
-        default="review",
-    )
     pipeline.add_argument("--resume", action="store_true")
     pipeline.add_argument("--keep-going", action="store_true")
     _mineru_args(pipeline)
@@ -46,10 +41,6 @@ def main(argv: list[str] | None = None) -> int:
             "token": mineru_token,
             "base_url": args.mineru_base_url,
             "language": args.mineru_language,
-            "pages": args.mineru_pages,
-            "ocr": args.mineru_ocr,
-            "formula": not args.mineru_no_formula,
-            "table": not args.mineru_no_table,
             "timeout": args.mineru_timeout,
         }
 
@@ -59,7 +50,6 @@ def main(argv: list[str] | None = None) -> int:
         client=client,
         resume=args.resume,
         keep_going=args.keep_going,
-        stop_after=args.stop_after,
         mineru_options=mineru_options,
     )
     print(
@@ -100,10 +90,6 @@ def _mineru_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--mineru-token-env", default="MINERU_API_TOKEN")
     parser.add_argument("--mineru-base-url", default=None)
     parser.add_argument("--mineru-language", default="en")
-    parser.add_argument("--mineru-pages", default=None)
-    parser.add_argument("--mineru-ocr", action="store_true")
-    parser.add_argument("--mineru-no-formula", action="store_true")
-    parser.add_argument("--mineru-no-table", action="store_true")
     parser.add_argument("--mineru-timeout", type=float, default=1800.0)
 
 

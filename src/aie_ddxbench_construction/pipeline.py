@@ -25,9 +25,6 @@ from .screening import ParsedPaper, candidate_manifest_rows, run_candidate_scree
 from .structure import StructureTask, run_structure_resolution
 from .vocabulary import OFFICIAL_MECHANISM_SET
 
-STOP_STAGES = {"paper_screen", "candidate_screen", "structure", "reference", "review"}
-
-
 def run_manifest_pipeline(
     manifest_path: Path,
     *,
@@ -35,17 +32,13 @@ def run_manifest_pipeline(
     client: ModelClient,
     resume: bool = False,
     keep_going: bool = False,
-    stop_after: str = "review",
     mineru_options: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Run selected stages from one path-neutral JSON manifest."""
-    if stop_after not in STOP_STAGES:
-        raise ValueError(f"Unknown stop_after stage: {stop_after}")
+    """Run the complete raw-case construction pipeline from a PDF manifest."""
     manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
     validate_pipeline_manifest(manifest)
     output_root.mkdir(parents=True, exist_ok=True)
     results: list[dict[str, Any]] = []
-    paper_reviews: dict[str, dict[str, Any]] = {}
     candidate_reviews: list[dict[str, Any]] = []
     candidate_reviews_by_paper: list[tuple[str, dict[str, Any]]] = []
     image_catalogs: dict[str, dict[str, Any]] = {}
@@ -54,33 +47,26 @@ def run_manifest_pipeline(
         paper_id = str(row["paper_id"])
         mechanism = str(row["retrieval_mechanism"])
         paper_root = output_root / "papers" / paper_id
-        if row.get("source_pdf"):
-            if not mineru_options or not mineru_options.get("token"):
-                raise ValueError(
-                    f"Paper {paper_id} uses source_pdf, but no MinerU API token was supplied."
-                )
-            try:
-                parse_report = parse_pdf_with_mineru_vlm(
-                    _resolve(manifest_path, row["source_pdf"]),
-                    output_dir=paper_root / "00_mineru",
-                    resume=resume,
-                    **mineru_options,
-                )
-            except Exception as exc:
-                error = f"{type(exc).__name__}: {exc}"
-                results.append({"item_type": "paper", "item_id": paper_id, "stage": "mineru_vlm", "status": "failed", "error": error})
-                if not keep_going:
-                    break
-                continue
-            results.append({"item_type": "paper", "item_id": paper_id, "stage": "mineru_vlm", "status": "completed", "error": None})
-            row["source_md"] = str(parse_report["source_markdown"])
-            row["source_image_dir"] = str(parse_report["source_image_dir"])
-            row.setdefault("pdf_name", Path(str(row["source_pdf"])).name)
-        paper = ParsedPaper(str(row["doi"]), _resolve(manifest_path, row["source_md"]), str(row.get("title") or ""), str(row.get("pdf_name") or ""))
-        image_paths = discover_image_paths(
-            source_images=(_resolve(manifest_path, value) for value in row.get("source_images", [])),
-            source_image_dir=_resolve(manifest_path, row["source_image_dir"]) if row.get("source_image_dir") else None,
-        )
+        if not mineru_options or not mineru_options.get("token"):
+            raise ValueError("A MinerU API token is required to parse every source PDF.")
+        try:
+            parse_report = parse_pdf_with_mineru_vlm(
+                _resolve(manifest_path, row["source_pdf"]),
+                output_dir=paper_root / "00_mineru",
+                resume=resume,
+                **mineru_options,
+            )
+        except Exception as exc:
+            error = f"{type(exc).__name__}: {exc}"
+            results.append({"item_type": "paper", "item_id": paper_id, "stage": "mineru_vlm", "status": "failed", "error": error})
+            if not keep_going:
+                break
+            continue
+        results.append({"item_type": "paper", "item_id": paper_id, "stage": "mineru_vlm", "status": "completed", "error": None})
+        source_md = Path(str(parse_report["source_markdown"]))
+        source_image_dir = Path(str(parse_report["source_image_dir"]))
+        paper = ParsedPaper(str(row["doi"]), source_md, str(row.get("title") or ""), Path(str(row["source_pdf"])).name)
+        image_paths = discover_image_paths(source_image_dir=source_image_dir)
         image_catalog = build_image_catalog(paper.source_md, image_paths)
         image_catalogs[paper_id] = image_catalog
         _write_json(paper_root / "00_image_catalog" / "image_catalog.json", image_catalog)
@@ -98,8 +84,7 @@ def run_manifest_pipeline(
             if not keep_going:
                 break
             continue
-        paper_reviews[paper_id] = stage1.parsed or {}
-        if stop_after == "paper_screen" or (stage1.parsed or {}).get("paper_verdict") == "reject":
+        if (stage1.parsed or {}).get("paper_verdict") != "pass":
             continue
         recommended_ids = list((stage1.parsed or {}).get("recommended_image_ids") or [])[:12]
         selected_records, unknown_ids = select_catalog_records(image_catalog, recommended_ids)
@@ -142,29 +127,24 @@ def run_manifest_pipeline(
             break
 
     _write_json(output_root / "candidate_manifest.json", {"rows": candidate_manifest_rows(candidate_reviews)})
-    explicit_cases = list(manifest.get("cases", []))
     automatic = build_automatic_case_rows(
         manifest,
         candidate_reviews_by_paper,
-        existing_cases=explicit_cases,
         image_catalogs=image_catalogs,
     )
     _write_json(output_root / "automatic_case_manifest.json", automatic)
-    if stop_after in {"paper_screen", "candidate_screen"}:
-        return _finish(output_root, results)
 
     paper_index = {str(row["paper_id"]): row for row in manifest.get("papers", [])}
-    case_rows = [*explicit_cases, *automatic["promoted"]]
-    for row in case_rows:
+    for row in automatic["passed"]:
         case_id = str(row["case_id"])
         candidate_id = str(row["candidate_id"])
         paper_row = paper_index[str(row["paper_id"])]
-        source_md = _resolve(manifest_path, paper_row["source_md"])
-        images = tuple(_resolve(manifest_path, value) for value in row.get("structure_images", paper_row.get("source_images", [])))
+        paper_source_md = output_root / "papers" / str(row["paper_id"]) / "00_mineru" / "source.md"
+        images = tuple(Path(value) for value in row.get("structure_images", []))
         case_root = output_root / "cases" / case_id
         try:
             structure = run_structure_resolution(
-                StructureTask(candidate_id, str(paper_row["doi"]), str(row["molecule_label"]), str(row.get("entity_type") or "molecule"), source_md, images, str(paper_row.get("title") or ""), tuple(row.get("structure_sources", [])), tuple(row.get("risk_flags", []))),
+                StructureTask(candidate_id, str(paper_row["doi"]), str(row["molecule_label"]), str(row.get("entity_type") or "molecule"), paper_source_md, images, str(paper_row.get("title") or ""), tuple(row.get("structure_sources", [])), tuple(row.get("risk_flags", []))),
                 output_dir=case_root / "03_structure",
                 client=client,
                 resume=resume,
@@ -180,11 +160,9 @@ def run_manifest_pipeline(
             if not keep_going:
                 break
             continue
-        if stop_after == "structure":
-            continue
         structure_dir = case_root / "03_structure"
         reference = run_reference_construction(
-            ReferenceTask(case_id, source_md, structure_dir / "locked_structure.json", structure_dir / "structure_match.png", dict(row["source_article"]), dict(row.get("target_context") or {})),
+            ReferenceTask(case_id, paper_source_md, structure_dir / "locked_structure.json", structure_dir / "structure_match.png", dict(row["source_article"]), dict(row.get("target_context") or {})),
             output_dir=case_root / "04_reference",
             client=client,
             resume=resume,
@@ -193,8 +171,6 @@ def run_manifest_pipeline(
         if reference.status not in {"completed", "skipped_valid"}:
             if not keep_going:
                 break
-            continue
-        if stop_after == "reference":
             continue
         delivery = case_root / "04_reference" / "delivery"
         review_case = ReviewCase.from_directory(delivery, archive_mechanism=str(row["archive_mechanism"]))
@@ -238,20 +214,15 @@ def build_automatic_case_rows(
     manifest: dict[str, Any],
     candidate_reviews: list[tuple[str, dict[str, Any]]],
     *,
-    existing_cases: list[dict[str, Any]] | None = None,
     image_catalogs: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Promote unambiguous Stage 2 make_case units into deterministic case rows."""
+    """Create deterministic case rows from candidates that pass Stage 2."""
     paper_index = {str(row["paper_id"]): row for row in manifest.get("papers", [])}
-    existing_cases = existing_cases or []
     image_catalogs = image_catalogs or {}
-    occupied_ids = {str(row.get("case_id") or "") for row in existing_cases}
-    occupied_targets = {
-        (str(row.get("paper_id") or ""), _normalized_label(row.get("molecule_label")))
-        for row in existing_cases
-    }
-    promoted: list[dict[str, Any]] = []
-    skipped: list[dict[str, Any]] = []
+    occupied_ids: set[str] = set()
+    occupied_targets: set[tuple[str, str]] = set()
+    passed: list[dict[str, Any]] = []
+    failed: list[dict[str, Any]] = []
 
     for paper_id, review in candidate_reviews:
         paper = paper_index[paper_id]
@@ -259,24 +230,24 @@ def build_automatic_case_rows(
             label = str(unit.get("unit_label") or "").strip() if isinstance(unit, dict) else ""
             base_record = {"paper_id": paper_id, "unit_index": unit_index, "molecule_label": label}
             if not isinstance(unit, dict):
-                skipped.append({**base_record, "reason": "candidate_not_object"})
+                failed.append({**base_record, "reason": "candidate_not_object"})
                 continue
-            if unit.get("case_decision") not in {"make_case", "human_review"}:
-                skipped.append({**base_record, "reason": f"case_decision:{unit.get('case_decision')}"})
+            if unit.get("eligibility") != "pass":
+                failed.append({**base_record, "reason": str(unit.get("reason") or "stage2_eligibility_fail")})
                 continue
             if unit.get("unit_type") not in {"molecule", "probe", "ligand", "guest"}:
-                skipped.append({**base_record, "reason": f"non_concrete_unit_type:{unit.get('unit_type')}"})
+                failed.append({**base_record, "reason": f"non_concrete_unit_type:{unit.get('unit_type')}"})
                 continue
             if not label:
-                skipped.append({**base_record, "reason": "missing_unit_label"})
+                failed.append({**base_record, "reason": "missing_unit_label"})
                 continue
             target_key = (paper_id, _normalized_label(label))
             if target_key in occupied_targets:
-                skipped.append({**base_record, "reason": "covered_by_explicit_or_prior_case"})
+                failed.append({**base_record, "reason": "duplicate_candidate"})
                 continue
             archive_mechanism = _select_archive_mechanism(unit.get("official_mechanism_assignments"))
             if archive_mechanism is None:
-                skipped.append({**base_record, "reason": "missing_valid_official_mechanism_assignment"})
+                failed.append({**base_record, "reason": "missing_valid_official_mechanism_assignment"})
                 continue
 
             selected_images, unknown_image_ids = select_catalog_records(
@@ -284,12 +255,9 @@ def build_automatic_case_rows(
                 unit.get("structure_image_ids") or [],
             )
             if unknown_image_ids:
-                skipped.append({**base_record, "reason": f"unavailable_structure_image_ids:{','.join(unknown_image_ids)}"})
+                failed.append({**base_record, "reason": f"unavailable_structure_image_ids:{','.join(unknown_image_ids)}"})
                 continue
-            if paper_id not in image_catalogs:
-                structure_images = list(paper.get("source_images", []))
-            else:
-                structure_images = [str(record["path"]) for record in selected_images]
+            structure_images = [str(record["path"]) for record in selected_images]
 
             identity_key = f"{paper.get('doi', '')}|{label}".lower()
             suffix = hashlib.sha256(identity_key.encode("utf-8")).hexdigest()[:8].upper()
@@ -297,7 +265,7 @@ def build_automatic_case_rows(
             candidate_id = str(unit.get("candidate_id") or f"{paper_slug}_{unit_index:03d}_{_identifier_part(label)}")
             case_id = f"AIE_DDX_{archive_mechanism}_{paper_slug}_{suffix}"
             if case_id in occupied_ids:
-                skipped.append({**base_record, "reason": f"duplicate_generated_case_id:{case_id}"})
+                failed.append({**base_record, "reason": f"duplicate_generated_case_id:{case_id}"})
                 continue
 
             row = {
@@ -318,24 +286,23 @@ def build_automatic_case_rows(
                 },
                 "target_context": {
                     "retrieval_mechanism": str(paper["retrieval_mechanism"]),
-                    "automatic_promotion": True,
+                    "stage2_eligibility": "pass",
                     "candidate_confidence": unit.get("confidence"),
                     "candidate_reason": unit.get("reason"),
                     "official_mechanism_assignments": unit.get("official_mechanism_assignments", []),
                 },
                 "archive_mechanism": archive_mechanism,
             }
-            promoted.append(row)
+            passed.append(row)
             occupied_ids.add(case_id)
             occupied_targets.add(target_key)
 
     return {
-        "enabled": True,
-        "promotion_policy": "concrete Stage 2 make_case or human_review units with a valid official mechanism assignment; downstream structure identity review remains blocking",
-        "promoted_count": len(promoted),
-        "skipped_count": len(skipped),
-        "promoted": promoted,
-        "skipped": skipped,
+        "eligibility_policy": "Only concrete Stage 2 candidates with eligibility=pass and a valid official mechanism assignment continue.",
+        "passed_count": len(passed),
+        "failed_count": len(failed),
+        "passed": passed,
+        "failed": failed,
     }
 
 
@@ -368,30 +335,26 @@ def _identifier_part(value: Any) -> str:
 def validate_pipeline_manifest(value: dict[str, Any]) -> None:
     if not isinstance(value, dict) or value.get("manifest_version") != "1.0":
         raise ValueError("Pipeline manifest_version must be 1.0.")
+    papers = value.get("papers")
+    if not isinstance(papers, list) or not papers:
+        raise ValueError("Pipeline manifest must contain at least one paper.")
     paper_ids: set[str] = set()
-    for row in value.get("papers", []):
-        required = {"paper_id", "doi", "retrieval_mechanism"}
+    for row in papers:
+        required = {"paper_id", "doi", "retrieval_mechanism", "source_pdf"}
         missing = required - set(row)
         if missing:
             raise ValueError(f"Paper row is missing: {sorted(missing)}")
-        if bool(row.get("source_md")) == bool(row.get("source_pdf")):
-            raise ValueError("Each paper row must contain exactly one of source_md or source_pdf.")
+        unsupported = {"source_md", "source_image_dir", "source_images"} & set(row)
+        if unsupported:
+            raise ValueError(f"Paper rows accept source_pdf only; remove unsupported fields: {sorted(unsupported)}")
         if row["retrieval_mechanism"] not in OFFICIAL_MECHANISM_SET:
             raise ValueError(f"Unknown retrieval mechanism: {row['retrieval_mechanism']}")
-        paper_ids.add(str(row["paper_id"]))
-    case_ids: set[str] = set()
-    for row in value.get("cases", []):
-        required = {"case_id", "candidate_id", "paper_id", "molecule_label", "source_article", "archive_mechanism"}
-        missing = required - set(row)
-        if missing:
-            raise ValueError(f"Case row is missing: {sorted(missing)}")
-        if str(row["paper_id"]) not in paper_ids:
-            raise ValueError(f"Case refers to unknown paper_id: {row['paper_id']}")
-        if row["archive_mechanism"] not in OFFICIAL_MECHANISM_SET:
-            raise ValueError(f"Unknown archive mechanism: {row['archive_mechanism']}")
-        if str(row["case_id"]) in case_ids:
-            raise ValueError(f"Duplicate case_id: {row['case_id']}")
-        case_ids.add(str(row["case_id"]))
+        paper_id = str(row["paper_id"])
+        if paper_id in paper_ids:
+            raise ValueError(f"Duplicate paper_id: {paper_id}")
+        paper_ids.add(paper_id)
+    if "cases" in value:
+        raise ValueError("Explicit cases are not supported; cases are generated automatically from Stage 2 passes.")
 
 
 def _resolve(manifest_path: Path, value: str) -> Path:

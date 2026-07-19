@@ -248,6 +248,11 @@ def _model_json(client: ModelClient, *, prompt: str, image_paths: tuple[Path, ..
 
 
 def _proposed_smiles(value: dict[str, Any]) -> str | None:
+    if "repair_action" in value:
+        if value.get("repair_action") != "fixed_smiles":
+            return None
+    elif value.get("final_decision") != "pass":
+        return None
     smiles = value.get("proposed_smiles")
     return str(smiles).strip() if isinstance(smiles, str) and smiles.strip() else None
 

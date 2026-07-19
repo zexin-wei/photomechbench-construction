@@ -74,7 +74,7 @@
   "triage_policy": {
     "high": "Original research with AIE/AIEE/solid-state emission, concrete molecule/material/probe labels, reliable DOI or publisher/PDF source, and strong or medium RIM/RIR/RIV mechanism signal.",
     "medium": "Likely relevant original research or reliable publisher/fulltext source with incomplete snippet evidence but plausible molecule-level photophysics and mechanism content.",
-    "low": "Possibly relevant but sparse snippet evidence; reserve only if download capacity allows.",
+    "low": "Insufficient snippet evidence for automatic inclusion.",
     "reject": "Review, patent, news, course page, database-only result, irrelevant application-only result, or no reliable DOI/publisher/fulltext source."
   }
 }

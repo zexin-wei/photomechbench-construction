@@ -7,7 +7,7 @@ You are given labeled contact sheets for the image records selected from Stage 1
 Candidate policy:
 
 - A candidate unit must be one concrete molecule, probe, ligand, or guest that can later receive one SMILES.
-- Include concrete controls only when they need an explicit `supporting_control`, `reserve`, or `reject` decision. Do not emit separate records for series, families, host-guest assemblies, frameworks, polymers, experimental media, instruments, crystal states, or other non-molecular context.
+- Record each concrete candidate as `pass` or `fail`. A candidate passes only when it is a locatable concrete molecule and the supplied source contains enough identity information for Stage 3. Do not emit separate records for series, families, host-guest assemblies, frameworks, polymers, experimental media, instruments, crystal states, or other non-molecular context.
 - Distinguish molecule-specific evidence from series-level, comparator-only, application-only, and keyword-only statements.
 - Keep official mechanism assignments inside the supplied 11-family vocabulary. Non-official concepts belong in contextual notes.
 - In `structure_image_ids`, return at most two IDs from the supplied contact sheets, ordered from strongest to weaker identity evidence. These IDs are resolved deterministically to the original high-resolution files for Stage 3.
@@ -23,7 +23,7 @@ Return exactly one JSON object with this structure:
     {
       "unit_label": "string",
       "unit_type": "molecule|probe|ligand|guest|unclear",
-      "case_decision": "make_case|supporting_control|reserve|human_review|reject",
+      "eligibility": "pass|fail",
       "stage3_risk_flags": ["string"],
       "structure_image_ids": ["I001"],
       "structure_text_sources": ["available supplied textual or caption source"],
@@ -44,6 +44,6 @@ Return exactly one JSON object with this structure:
 Allowed values:
 
 - `unit_type`: `molecule|probe|ligand|guest|unclear`
-- `case_decision`: `make_case|supporting_control|reserve|human_review|reject`
+- `eligibility`: `pass|fail`
 
 Official assignments must use a supplied official mechanism and include a role and evidence strength. Keep `reason` concise and do not reproduce long evidence summaries that the downstream reference stage will reconstruct from the source.
