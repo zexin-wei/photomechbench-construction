@@ -69,9 +69,13 @@ MinerU API tests require credentials supplied through environment variables.
 If RDKit is installed in another environment, set one of:
 
 ```powershell
-$env:AIE_DDX_RDKIT_CONDA_ENV = "molscribe_py310"
+$env:AIE_DDX_RDKIT_CONDA_ENV = "your-rdkit-environment"
 $env:AIE_DDX_RDKIT_PYTHON = "C:\path\to\rdkit-python.exe"
 ```
+
+These settings are optional. They are only needed when the active Python
+environment cannot import RDKit and an existing external RDKit runtime should
+be reused.
 
 Model-dependent commands use an OpenAI-compatible API but have no provider-specific endpoint or credential default:
 
@@ -361,7 +365,6 @@ support Chat Completions.
 ## Tests
 
 ```powershell
-$env:AIE_DDX_RDKIT_CONDA_ENV = "molscribe_py310"
 python -m pytest -q
 ```
 

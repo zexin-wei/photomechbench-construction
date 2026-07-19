@@ -600,7 +600,7 @@ cd path\to\aie_ddxbench_construction
 
 $env:PYTHONPATH = (Resolve-Path "src").Path
 $env:PYTHONDONTWRITEBYTECODE = "1"
-$env:AIE_DDX_RDKIT_CONDA_ENV = "molscribe_py310"
+$env:AIE_DDX_RDKIT_CONDA_ENV = "your-rdkit-environment"
 
 python -B -m pytest -q
 ```
