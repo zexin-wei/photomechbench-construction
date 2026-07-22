@@ -12,6 +12,8 @@ Your task is to determine whether the candidate JSON is suitable as an AIE-DDxBe
 
 Use only facts present in the three artifacts. If an item cannot be verified, mark it `unclear`, `unverifiable`, or `UNVERIFIABLE` as appropriate. Do not reveal chain-of-thought. Return only the completed review template.
 
+Before evaluating the case, check whether `source.md` contains the article content needed to verify the cited evidence, including relevant main text, captions, tables, and figures recovered as text. If the reference relies on Supporting Information, the relevant supplementary content must also be present in the supplied source. If a key figure, table, spectrum, numerical result, or supplementary passage is missing, mark the affected claim `UNVERIFIABLE`. Do not infer or reconstruct missing paper content.
+
 ## 0. Canonical mechanism vocabulary
 
 Ordinary `reference_diagnosis_units[].mechanism` values and core `mechanism_links` must use one of these 11 mechanism families:
@@ -187,6 +189,10 @@ For each core unit, check:
 
 A quote is a source locator and need not contain every interpretive phrase in the claim. Nearby text, captions, tables, and other explicit source content may jointly support the claim. OCR, line-break, hyphenation, Unicode, superscript, and punctuation differences are not substantive errors.
 
+Evidence about the target molecule must come from the source paper's own results, figures, tables, calculations, or explicit molecule-specific interpretation. Background statements and findings cited from other papers must not be used as direct support.
+
+The absence of a reported experiment or mechanism assignment is not evidence against that mechanism. Use `weakened_or_rejected` only when the source provides affirmative counterevidence.
+
 Use `PARTLY_SUPPORTED` only when a material fact or conclusion is supported only in part. Use `NOT_FOUND` when the source lacks the claimed fact. Use `OVERCLAIMED` when a weak observation is upgraded to a specific or exclusionary mechanism without support. Use `UNVERIFIABLE` when the source refers to evidence that is absent from the supplied parsed material.
 
 Per-unit labels:
@@ -307,7 +313,9 @@ Use `NEEDS_MINOR_FIX` only for limited but substantive corrections, such as remo
 
 Do not assign `NEEDS_MINOR_FIX` merely for stylistic role names, short but adequate quotes, explanations placed in a different evidence field, formatting or OCR variation, or clearly marked indirect analogue evidence used at an appropriate strength.
 
-Use `PASS_WITH_CAVEAT` when identity, core evidence, and diagnoses are reliable but a case-specific residual limitation still materially narrows confidence or scope, even though it is already represented and requires no mandatory repair. Examples include an unavoidable component omission in the molecular representation, indirect evidence for a core claim, or a source limitation that affects the strength of a retained supported diagnosis.
+Use `PASS_WITH_CAVEAT` when the molecular identity, core evidence, and mechanism diagnoses are reliable, but a small number of limitations remain that do not affect the usability of the case. These limitations must already be represented in the case and must not require mandatory repair.
+
+Do not use `PASS_WITH_CAVEAT` when a limitation requires changing a mechanism's evidence status, diagnosis role, supporting evidence, or final synthesis. Such a case requires `NEEDS_MINOR_FIX`.
 
 Do not downgrade a case solely because the source does not test every alternative mechanism, because secondary mechanisms remain uncertain, or because the JSON correctly records those alternatives as `underdetermined`. These are expected properties of an evidence-aware differential diagnosis, not defects in the case. If all source limitations are represented at the correct evidential strength and no material issue remains, use `PASS`.
 
@@ -404,7 +412,15 @@ notes:
 - current problem: None / ...
 - recommended fix: None / ...
 
-15. Disposition:
+15. Score impact:
+score_impact: NONE / POSSIBLE / DEFINITE
+score_impact_reason:
+State whether any required correction changes:
+- `supported` versus `underdetermined` or `weakened_or_rejected`;
+- `primary` or `co-primary` versus `secondary`;
+- inclusion in the scored reference mechanism set.
+
+16. Disposition:
 KEEP / KEEP_WITH_CAVEAT / MINOR_FIX_THEN_KEEP / MAJOR_REPAIR / REBUILD_OR_DROP
 notes:
 
