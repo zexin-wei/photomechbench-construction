@@ -1,4 +1,4 @@
-# AIE-DDxBench Independent Reference-Alignment Review
+# PhotoMechBench Independent Reference-Alignment Review
 
 Review only the three artifacts supplied in the current request. Do not browse, use remembered facts, consult prior conversations, or regenerate the case JSON.
 
@@ -8,7 +8,7 @@ The request provides:
 2. `source.md`: the parsed source article;
 3. `structure_match.png`: the source-paper structure evidence beside the RDKit depiction of the candidate SMILES.
 
-Your task is to determine whether the candidate JSON is suitable as an AIE-DDxBench reference answer. The review concerns scientific correctness, molecular identity, source grounding, mechanism coverage, and internal consistency. It does not assess whether the hidden answer could be inferred from SMILES alone.
+Your task is to determine whether the candidate JSON is suitable as a PhotoMechBench reference answer. The review concerns scientific correctness, molecular identity, source grounding, mechanism coverage, and internal consistency. It does not assess whether the hidden answer could be inferred from SMILES alone.
 
 Use only facts present in the three artifacts. If an item cannot be verified, mark it `unclear`, `unverifiable`, or `UNVERIFIABLE` as appropriate. Do not reveal chain-of-thought. Return only the completed review template.
 

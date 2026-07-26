@@ -122,7 +122,7 @@ def _load_sdk() -> Any:
     except (ImportError, AttributeError) as exc:
         raise RuntimeError(
             "The installed `mineru` module does not expose the MinerU Open API SDK. "
-            "Use the dedicated aie-ddxbench-construction environment and reinstall "
+            "Use the dedicated photomechbench-construction environment and reinstall "
             "`mineru-open-sdk`."
         ) from exc
     return MinerU

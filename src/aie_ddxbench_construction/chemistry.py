@@ -16,8 +16,10 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 
-RDKIT_PYTHON_ENV = "AIE_DDX_RDKIT_PYTHON"
-RDKIT_CONDA_ENV = "AIE_DDX_RDKIT_CONDA_ENV"
+RDKIT_PYTHON_ENV = "PHOTOMECHBENCH_RDKIT_PYTHON"
+RDKIT_CONDA_ENV = "PHOTOMECHBENCH_RDKIT_CONDA_ENV"
+LEGACY_RDKIT_PYTHON_ENV = "AIE_DDX_RDKIT_PYTHON"
+LEGACY_RDKIT_CONDA_ENV = "AIE_DDX_RDKIT_CONDA_ENV"
 
 
 def external_runtime_environment(runtime_env: Mapping[str, str] | None = None) -> dict[str, str]:
@@ -156,7 +158,9 @@ def _try_runtime_fallbacks(
 ) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
     """Try configured external RDKit runtimes after current-Python failure."""
     warnings: list[dict[str, Any]] = []
-    python_path = _clean_optional_string(env.get(RDKIT_PYTHON_ENV))
+    python_path = _clean_optional_string(
+        env.get(RDKIT_PYTHON_ENV) or env.get(LEGACY_RDKIT_PYTHON_ENV)
+    )
     if python_path:
         command = _external_python_command(python_path, smiles, expected_formula, comparison_smiles)
         report, warning = _run_external_rdkit_validation(
@@ -169,7 +173,9 @@ def _try_runtime_fallbacks(
             return report, warnings
         warnings.append(warning)
 
-    conda_env = _clean_optional_string(env.get(RDKIT_CONDA_ENV))
+    conda_env = _clean_optional_string(
+        env.get(RDKIT_CONDA_ENV) or env.get(LEGACY_RDKIT_CONDA_ENV)
+    )
     if conda_env:
         command = _conda_command(conda_env, smiles, expected_formula, comparison_smiles)
         report, warning = _run_external_rdkit_validation(

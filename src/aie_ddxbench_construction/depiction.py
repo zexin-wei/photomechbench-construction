@@ -8,7 +8,13 @@ import sys
 from pathlib import Path
 from typing import Mapping
 
-from .chemistry import RDKIT_CONDA_ENV, RDKIT_PYTHON_ENV, external_runtime_environment
+from .chemistry import (
+    LEGACY_RDKIT_CONDA_ENV,
+    LEGACY_RDKIT_PYTHON_ENV,
+    RDKIT_CONDA_ENV,
+    RDKIT_PYTHON_ENV,
+    external_runtime_environment,
+)
 
 
 def render_smiles(
@@ -27,8 +33,12 @@ def render_smiles(
     except ImportError:
         pass
 
-    python_path = str(env.get(RDKIT_PYTHON_ENV) or "").strip()
-    conda_env = str(env.get(RDKIT_CONDA_ENV) or "").strip()
+    python_path = str(
+        env.get(RDKIT_PYTHON_ENV) or env.get(LEGACY_RDKIT_PYTHON_ENV) or ""
+    ).strip()
+    conda_env = str(
+        env.get(RDKIT_CONDA_ENV) or env.get(LEGACY_RDKIT_CONDA_ENV) or ""
+    ).strip()
     base = [
         "-m",
         "aie_ddxbench_construction.depiction_cli",
@@ -48,8 +58,8 @@ def render_smiles(
         _run(["conda", "run", "-n", conda_env, "python", *base], runtime_env=env)
         return _report(output_path, "conda_env", conda_env)
     raise RuntimeError(
-        "RDKit is unavailable. Configure AIE_DDX_RDKIT_PYTHON or "
-        "AIE_DDX_RDKIT_CONDA_ENV before rendering."
+        "RDKit is unavailable. Configure PHOTOMECHBENCH_RDKIT_PYTHON or "
+        "PHOTOMECHBENCH_RDKIT_CONDA_ENV before rendering."
     )
 
 

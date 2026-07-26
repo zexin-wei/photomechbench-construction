@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "aie-ddxbench-construction"
+name = "photomechbench-construction"
 version = "0.1.0"
-description = "Canonical construction and audit pipeline for AIE-DDxBench raw cases"
+description = "Canonical construction and audit pipeline for PhotoMechBench raw cases"
 requires-python = ">=3.10"
 dependencies = [
   "jsonschema>=4.20,<5",
@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.scripts]
-aie-ddxbench = "aie_ddxbench_construction.cli:main"
+photomechbench = "aie_ddxbench_construction.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

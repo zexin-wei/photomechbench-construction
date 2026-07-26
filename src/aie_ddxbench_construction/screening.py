@@ -16,7 +16,7 @@ from .provider import ModelClient
 from .vocabulary import OFFICIAL_MECHANISMS
 
 SCREENING_SYSTEM_PROMPT = (
-    "You are a strict scientific data curator for AIE-DDxBench. "
+    "You are a strict scientific data curator for PhotoMechBench. "
     "Use only the supplied source material. Return exactly one JSON object, "
     "without hidden reasoning, markdown fences, or invented evidence."
 )

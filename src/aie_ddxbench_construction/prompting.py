@@ -34,7 +34,7 @@ def build_independent_review_text(
         if include_image
         else "structure_match.png is not attached. Mark image-dependent checks as unverifiable."
     )
-    return f"""Review the three supplied case artifacts using the AIE-DDxBench reference-alignment template below.
+    return f"""Review the three supplied case artifacts using the PhotoMechBench reference-alignment template below.
 
 Mandatory constraints:
 - Use only final_reference_alignment.json, source.md, and structure_match.png from this message.

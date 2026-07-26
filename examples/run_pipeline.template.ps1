@@ -26,8 +26,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-if (-not (Get-Command aie-ddxbench -ErrorAction SilentlyContinue)) {
-    throw "aie-ddxbench is not installed. Run: python -m pip install -e ."
+if (-not (Get-Command photomechbench -ErrorAction SilentlyContinue)) {
+    throw "photomechbench is not installed. Run: python -m pip install -e ."
 }
 
 $apiKey = [Environment]::GetEnvironmentVariable($ApiKeyEnvironment, "Process")
@@ -50,11 +50,11 @@ if (-not $apiKey) {
 }
 
 if ($RdkitCondaEnvironment) {
-    $env:AIE_DDX_RDKIT_CONDA_ENV = $RdkitCondaEnvironment
+    $env:PHOTOMECHBENCH_RDKIT_CONDA_ENV = $RdkitCondaEnvironment
 }
 $env:PYTHONIOENCODING = "utf-8"
 
-aie-ddxbench run-pipeline `
+photomechbench run-pipeline `
     --manifest $Manifest `
     --out-root $OutputRoot `
     --provider $Provider `

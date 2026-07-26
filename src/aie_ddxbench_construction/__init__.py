@@ -1,4 +1,4 @@
-"""Canonical AIE-DDxBench raw-case construction package."""
+"""Canonical PhotoMechBench raw-case construction package."""
 
 from .vocabulary import (
     FINAL_SYNTHESIS_MECHANISM,

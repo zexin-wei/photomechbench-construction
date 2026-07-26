@@ -12,7 +12,7 @@ from .provider import OpenAICompatibleClient
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="aie-ddxbench")
+    parser = argparse.ArgumentParser(prog="photomechbench")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     pipeline = subparsers.add_parser(

@@ -1,7 +1,7 @@
 # Versioned Prompt Assets
 
 These files are the authoritative static instructions for model-assisted
-stages in the final AIE-DDxBench raw-case construction workflow.
+stages in the final PhotoMechBench raw-case construction workflow.
 
 Python code may append only run-specific context, such as paper metadata,
 parsed source text, candidate identity, locked SMILES, local-gate reports, or

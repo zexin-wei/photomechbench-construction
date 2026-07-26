@@ -21,7 +21,7 @@ from .schema import validate_raw_case
 from .vocabulary import FINAL_SYNTHESIS_MECHANISM, OFFICIAL_MECHANISMS, RAW_CASE_SCHEMA_VERSION, RAW_CASE_TRACK
 
 REFERENCE_SYSTEM_PROMPT = (
-    "You construct a source-grounded AIE-DDxBench v0.4 reference case. "
+    "You construct a source-grounded PhotoMechBench v0.4 reference case. "
     "Use only the supplied source and locked target. Return exactly one JSON object."
 )
 REFERENCE_PROMPT_VERSION = "reference_construction_v1"

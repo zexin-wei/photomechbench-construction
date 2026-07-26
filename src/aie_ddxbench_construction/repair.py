@@ -223,7 +223,7 @@ def _parse_json_object(text: str) -> dict[str, Any]:
 
 def _repair_system_prompt() -> str:
     return (
-        "You repair a reviewed AIE-DDxBench JSON case. Return only the requested JSON object. "
+        "You repair a reviewed PhotoMechBench JSON case. Return only the requested JSON object. "
         "Use only the supplied case, review, and source. Never invent evidence."
     )
 

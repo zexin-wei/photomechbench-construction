@@ -17,6 +17,8 @@ htmlcov/
 # Local runtime outputs
 work/
 runs/
+/docs/
+/aie-ddxbench-construction/
 
 # Local credentials and environment overrides
 .env

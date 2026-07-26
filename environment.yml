@@ -1,4 +1,4 @@
-name: aie-ddxbench-construction
+name: photomechbench-construction
 channels:
   - conda-forge
 dependencies:

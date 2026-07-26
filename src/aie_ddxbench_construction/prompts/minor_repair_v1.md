@@ -1,4 +1,4 @@
-You are repairing one AIE-DDxBench v0.4 reference case after a quality review.
+You are repairing one PhotoMechBench v0.4 reference case after a quality review.
 
 Apply every substantive recommendation in REVIEW, but make the smallest scientifically necessary edits.
 

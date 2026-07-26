@@ -1,7 +1,7 @@
-# AIE-DDxBench Raw-Case Construction
+# PhotoMechBench Raw-Case Construction
 
 This repository contains the final code used to construct paper-derived
-AIE-DDxBench raw cases. The public interface is a single manifest-driven
+PhotoMechBench raw cases. The public interface is a single manifest-driven
 pipeline that starts from a local main-article PDF and produces reviewed JSON
 cases with retained intermediate artifacts.
 
@@ -24,7 +24,7 @@ The reference environment uses Python 3.10 and RDKit.
 
 ```powershell
 conda env create -f environment.yml
-conda activate aie-ddxbench-construction
+conda activate photomechbench-construction
 ```
 
 ## Credentials
@@ -65,7 +65,7 @@ Use the supplied PowerShell template:
 The equivalent direct command is:
 
 ```powershell
-aie-ddxbench run-pipeline `
+photomechbench run-pipeline `
   --manifest examples\pipeline_manifest.example.json `
   --out-root work\batch_001 `
   --provider openai-compatible `
@@ -96,3 +96,7 @@ failure.
 The package includes the versioned prompts, 11 mechanism profiles, and the v0.4
 raw-case schema required by the pipeline. These files are runtime assets and
 must remain installed with the Python package.
+
+Existing `AIE_DDX_*` case identifiers remain unchanged so that previously
+constructed cases and review artifacts stay compatible with the renamed
+benchmark.

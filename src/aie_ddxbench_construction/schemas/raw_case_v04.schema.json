@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.org/aie-ddxbench/raw-case-v04.schema.json",
-  "title": "AIE-DDxBench raw case v0.4",
+  "$id": "https://example.org/photomechbench/raw-case-v04.schema.json",
+  "title": "PhotoMechBench raw case v0.4",
   "type": "object",
   "additionalProperties": false,
   "required": ["case_id", "version", "track", "public_input", "hidden_reference"],
