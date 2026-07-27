@@ -1,8 +1,8 @@
 # Stage 1 Paper Screening
 
 Screen one parsed primary-source paper for molecule-level benchmark suitability.
-
-The retrieval mechanism is only a search hypothesis. Do not treat it as a final mechanism label. Do not generate benchmark JSON or SMILES.
+Do not assume a target mechanism. Infer only source-grounded hypotheses from
+the official mechanism vocabulary. Do not generate benchmark JSON or SMILES.
 
 Assess whether the paper is original experimental research or a molecule-level computational mechanism study; concerns AIE, aggregation-, solid-, or environment-dependent luminescence or closely related molecular photophysics; contains locatable entities with traceable labels or structures; reports photophysical, excited-state, structural, or computational evidence; and contains enough mechanism-relevant evidence for later differential diagnosis.
 

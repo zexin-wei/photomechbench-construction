@@ -9,8 +9,6 @@ from pathlib import Path
 from typing import Mapping
 
 from .chemistry import (
-    LEGACY_RDKIT_CONDA_ENV,
-    LEGACY_RDKIT_PYTHON_ENV,
     RDKIT_CONDA_ENV,
     RDKIT_PYTHON_ENV,
     external_runtime_environment,
@@ -33,12 +31,8 @@ def render_smiles(
     except ImportError:
         pass
 
-    python_path = str(
-        env.get(RDKIT_PYTHON_ENV) or env.get(LEGACY_RDKIT_PYTHON_ENV) or ""
-    ).strip()
-    conda_env = str(
-        env.get(RDKIT_CONDA_ENV) or env.get(LEGACY_RDKIT_CONDA_ENV) or ""
-    ).strip()
+    python_path = str(env.get(RDKIT_PYTHON_ENV) or "").strip()
+    conda_env = str(env.get(RDKIT_CONDA_ENV) or "").strip()
     base = [
         "-m",
         "aie_ddxbench_construction.depiction_cli",

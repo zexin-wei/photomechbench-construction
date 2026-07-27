@@ -1,6 +1,9 @@
 # Stage 2 Molecule Candidate Screening
 
-Identify molecule-level candidates for later SMILES resolution. Do not generate final benchmark JSON. Do not invent or finalize SMILES. The retrieval mechanism remains a hypothesis, not a final label.
+Identify molecule-level candidates for later SMILES resolution. Do not generate
+final benchmark JSON. Do not invent or finalize SMILES. Infer source-grounded
+assignments across the official mechanism vocabulary without assuming a target
+mechanism.
 
 You are given labeled contact sheets for the image records selected from Stage 1 caption analysis. Visually inspect those images. For each candidate, select only image IDs that actually show the candidate's molecular structure or identity-relevant components. Do not select a graph, spectrum, packing diagram, or unrelated molecule merely because its caption mentions the candidate. Use an empty image list if no displayed image supports exact structure identity.
 
@@ -18,7 +21,7 @@ Return exactly one JSON object with this structure:
 ```json
 {
   "paper_title": "string or null",
-  "target_discovery_mechanism": "one supplied official mechanism",
+  "target_discovery_mechanism": "one official mechanism",
   "candidate_units": [
     {
       "unit_label": "string",
@@ -29,7 +32,7 @@ Return exactly one JSON object with this structure:
       "structure_text_sources": ["available supplied textual or caption source"],
       "official_mechanism_assignments": [
         {
-          "mechanism": "one supplied official mechanism",
+          "mechanism": "one official mechanism",
           "role": "primary|co_primary|secondary|contextual",
           "evidence_strength": "strong|moderate|weak|unsupported"
         }

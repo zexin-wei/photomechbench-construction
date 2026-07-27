@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [string]$Manifest,
+    [string]$InputPath,
 
     [Parameter(Mandatory = $true)]
     [string]$OutputRoot,
@@ -48,6 +48,9 @@ if (-not $mineruKey) {
 if (-not $apiKey) {
     throw "The API key environment variable is not set: $ApiKeyEnvironment"
 }
+if (-not $mineruKey) {
+    throw "The MinerU token environment variable is not set: $MineruTokenEnvironment"
+}
 
 if ($RdkitCondaEnvironment) {
     $env:PHOTOMECHBENCH_RDKIT_CONDA_ENV = $RdkitCondaEnvironment
@@ -55,7 +58,7 @@ if ($RdkitCondaEnvironment) {
 $env:PYTHONIOENCODING = "utf-8"
 
 photomechbench run-pipeline `
-    --manifest $Manifest `
+    --input $InputPath `
     --out-root $OutputRoot `
     --provider $Provider `
     --model $Model `

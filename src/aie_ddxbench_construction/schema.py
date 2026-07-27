@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from importlib.resources import files
-from pathlib import Path
 from typing import Any, Iterable
 
 from jsonschema import Draft202012Validator
@@ -18,9 +17,6 @@ class ValidationIssue:
     path: str
     code: str
     message: str
-
-    def to_dict(self) -> dict[str, str]:
-        return {"path": self.path, "code": self.code, "message": self.message}
 
 
 def load_raw_case_schema() -> dict[str, Any]:
@@ -78,14 +74,6 @@ def validate_raw_case(case: Any) -> list[ValidationIssue]:
                 )
             )
     return issues
-
-
-def validate_json_file(path: Path) -> list[ValidationIssue]:
-    try:
-        case = json.loads(path.read_text(encoding="utf-8-sig"))
-    except (OSError, json.JSONDecodeError) as exc:
-        return [ValidationIssue("<root>", "json_read_error", str(exc))]
-    return validate_raw_case(case)
 
 
 def _duplicate_issues(values: Iterable[str], path: str, code: str) -> list[ValidationIssue]:

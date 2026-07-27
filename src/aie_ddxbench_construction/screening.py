@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
 from .json_io import parse_json_object
-from .mechanism_profiles import load_mechanism_profile
+from .discovery import is_valid_doi
 from .prompting import load_prompt
 from .provider import ModelClient
 from .vocabulary import OFFICIAL_MECHANISMS
@@ -46,20 +46,26 @@ class ScreeningResult:
 def build_paper_screen_prompt(
     paper: ParsedPaper,
     *,
-    retrieval_mechanism: str,
     image_candidates: list[dict[str, Any]] | None = None,
     source_char_limit: int = 120_000,
 ) -> str:
-    _require_mechanism(retrieval_mechanism)
     source = _source_excerpt(paper.source_md, source_char_limit)
     metadata = {"doi": paper.doi, "title": paper.title, "pdf_name": paper.pdf_name}
     policy = load_prompt(PAPER_SCREEN_PROMPT_VERSION)
+    discovery_context = (
+        "Screen the paper without assuming a target mechanism, and list "
+        "source-grounded hypotheses using only the official vocabulary."
+    )
     return f"""{policy}
 
 Paper metadata:
 {json.dumps(metadata, ensure_ascii=False, indent=2)}
 
-Retrieval mechanism hypothesis: {retrieval_mechanism}
+Official mechanism vocabulary:
+{json.dumps(list(OFFICIAL_MECHANISMS), ensure_ascii=False, indent=2)}
+
+Discovery context:
+{discovery_context}
 
 Parsed image references and nearby caption context:
 {json.dumps(image_candidates or [], ensure_ascii=False, indent=2)}
@@ -74,14 +80,15 @@ Parsed source:
 def build_candidate_screen_prompt(
     paper: ParsedPaper,
     *,
-    retrieval_mechanism: str,
     paper_review: dict[str, Any],
     image_candidates: list[dict[str, Any]] | None = None,
     source_char_limit: int = 160_000,
 ) -> str:
-    _require_mechanism(retrieval_mechanism)
     source = _source_excerpt(paper.source_md, source_char_limit)
-    profile = load_mechanism_profile(retrieval_mechanism)
+    discovery_context = {
+        "mode": "automatic",
+        "instruction": "Infer source-grounded mechanism assignments across the official vocabulary.",
+    }
     policy = load_prompt(CANDIDATE_SCREEN_PROMPT_VERSION)
     return f"""{policy}
 
@@ -91,8 +98,8 @@ Paper metadata:
 Official mechanism vocabulary:
 {json.dumps(list(OFFICIAL_MECHANISMS), ensure_ascii=False, indent=2)}
 
-Retrieval mechanism profile:
-{json.dumps(profile, ensure_ascii=False, indent=2)}
+Discovery mechanism context:
+{json.dumps(discovery_context, ensure_ascii=False, indent=2)}
 
 Stage 1 review:
 {json.dumps(paper_review, ensure_ascii=False, indent=2)}
@@ -110,7 +117,6 @@ Parsed source:
 def run_paper_screen(
     paper: ParsedPaper,
     *,
-    retrieval_mechanism: str,
     output_dir: Path,
     client: ModelClient,
     image_candidates: list[dict[str, Any]] | None = None,
@@ -118,7 +124,6 @@ def run_paper_screen(
 ) -> ScreeningResult:
     prompt = build_paper_screen_prompt(
         paper,
-        retrieval_mechanism=retrieval_mechanism,
         image_candidates=image_candidates,
     )
     return _run_screen(
@@ -136,7 +141,6 @@ def run_paper_screen(
 def run_candidate_screen(
     paper: ParsedPaper,
     *,
-    retrieval_mechanism: str,
     paper_review: dict[str, Any],
     output_dir: Path,
     client: ModelClient,
@@ -146,7 +150,6 @@ def run_candidate_screen(
 ) -> ScreeningResult:
     prompt = build_candidate_screen_prompt(
         paper,
-        retrieval_mechanism=retrieval_mechanism,
         paper_review=paper_review,
         image_candidates=image_candidates,
     )
@@ -184,6 +187,19 @@ def validate_paper_review(value: dict[str, Any]) -> list[str]:
         errors.append("recommended_image_ids must be an array of image IDs")
     elif len(recommendations) > 12:
         errors.append("recommended_image_ids may contain at most 12 IDs")
+    doi = value.get("doi")
+    if not isinstance(doi, str) or not is_valid_doi(doi):
+        errors.append("doi must be a valid source-grounded DOI")
+    title = value.get("title")
+    if title is not None and not isinstance(title, str):
+        errors.append("title must be a string or null")
+    if verdict == "pass" and (not isinstance(title, str) or not title.strip()):
+        errors.append("pass requires a non-empty source-grounded title")
+    hypotheses = value.get("possible_hypotheses_to_check_later")
+    if not isinstance(hypotheses, list):
+        errors.append("possible_hypotheses_to_check_later must be an array")
+    elif any(item not in OFFICIAL_MECHANISMS for item in hypotheses):
+        errors.append("possible_hypotheses_to_check_later must use the official mechanism vocabulary")
     return errors
 
 
@@ -248,7 +264,7 @@ def candidate_manifest_rows(reviews: Iterable[dict[str, Any]]) -> list[dict[str,
             rows.append(
                 {
                     "paper_title": review.get("paper_title"),
-                    "retrieval_mechanism": review.get("target_discovery_mechanism"),
+                    "discovery_mechanism": review.get("target_discovery_mechanism"),
                     "molecule_label": label,
                     "entity_type": unit.get("unit_type"),
                     "eligibility": unit.get("eligibility"),
@@ -376,11 +392,6 @@ def _source_excerpt(path: Path, limit: int) -> str:
     head = limit * 2 // 3
     tail = limit - head
     return text[:head] + "\n\n[...SOURCE TRUNCATED...]\n\n" + text[-tail:]
-
-
-def _require_mechanism(mechanism: str) -> None:
-    if mechanism not in OFFICIAL_MECHANISMS:
-        raise ValueError(f"Unknown mechanism: {mechanism}")
 
 
 def _sha256(path: Path) -> str:

@@ -8,7 +8,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from .prompting import (
     INDEPENDENT_REVIEW_PROMPT_VERSION,
@@ -52,15 +52,6 @@ class ReviewResult:
     decision: str | None
     output_dir: Path
     error: str | None = None
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "case_id": self.case_id,
-            "status": self.status,
-            "decision": self.decision,
-            "output_dir": str(self.output_dir),
-            "error": self.error,
-        }
 
 
 def run_independent_review(
@@ -148,31 +139,6 @@ def run_independent_review(
             },
         )
         return ReviewResult(case.case_id, "failed", None, output_dir, error)
-
-
-def run_review_batch(
-    cases: Iterable[ReviewCase],
-    *,
-    output_root: Path,
-    client: ModelClient,
-    resume: bool = False,
-    keep_going: bool = False,
-) -> list[ReviewResult]:
-    results: list[ReviewResult] = []
-    for case in cases:
-        case_output = output_root / case.archive_mechanism / case.case_id
-        result = run_independent_review(case, output_dir=case_output, client=client, resume=resume)
-        results.append(result)
-        if result.status == "failed" and not keep_going:
-            break
-    _write_json(
-        output_root / "review_batch_summary.json",
-        {
-            "case_count": len(results),
-            "results": [result.to_dict() for result in results],
-        },
-    )
-    return results
 
 
 def parse_review_decision(text: str) -> str | None:

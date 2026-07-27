@@ -12,9 +12,6 @@ dependencies = [
   "mineru-open-sdk>=0.1.1,<0.2",
   "openai>=1.30,<2",
   "Pillow>=9,<12",
-  "pypdf>=4,<6",
-  "PyYAML>=6,<7",
-  "requests>=2.31,<3",
 ]
 
 [project.scripts]
@@ -28,7 +25,6 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 aie_ddxbench_construction = [
-  "profiles/*.json",
   "prompts/*.md",
   "schemas/*.json",
 ]

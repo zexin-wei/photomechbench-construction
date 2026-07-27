@@ -7,7 +7,7 @@ import json
 import os
 from pathlib import Path
 
-from .pipeline import run_manifest_pipeline
+from .pipeline import run_pdf_pipeline
 from .provider import OpenAICompatibleClient
 
 
@@ -17,9 +17,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     pipeline = subparsers.add_parser(
         "run-pipeline",
-        help="Run the complete manifest-driven raw-case construction pipeline.",
+        help="Run the complete raw-case construction pipeline from one PDF or a PDF directory.",
     )
-    pipeline.add_argument("--manifest", type=Path, required=True)
+    pipeline.add_argument(
+        "--input",
+        type=Path,
+        required=True,
+        help="A local main-article PDF or a directory scanned recursively for PDFs.",
+    )
     pipeline.add_argument("--out-root", type=Path, required=True)
     pipeline.add_argument("--resume", action="store_true")
     pipeline.add_argument("--keep-going", action="store_true")
@@ -35,17 +40,17 @@ def main(argv: list[str] | None = None) -> int:
 
     client = _client_from_args(args)
     mineru_token = os.environ.get(args.mineru_token_env)
-    mineru_options = None
-    if mineru_token:
-        mineru_options = {
-            "token": mineru_token,
-            "base_url": args.mineru_base_url,
-            "language": args.mineru_language,
-            "timeout": args.mineru_timeout,
-        }
+    if not mineru_token:
+        raise ValueError(f"MinerU token environment variable is not set: {args.mineru_token_env}")
+    mineru_options = {
+        "token": mineru_token,
+        "base_url": args.mineru_base_url,
+        "language": args.mineru_language,
+        "timeout": args.mineru_timeout,
+    }
 
-    summary = run_manifest_pipeline(
-        args.manifest,
+    summary = run_pdf_pipeline(
+        args.input,
         output_root=args.out_root,
         client=client,
         resume=args.resume,
@@ -57,6 +62,7 @@ def main(argv: list[str] | None = None) -> int:
             {
                 "result_count": summary["result_count"],
                 "failure_count": summary["failure_count"],
+                "final_case_count": summary["final_case_count"],
             }
         )
     )

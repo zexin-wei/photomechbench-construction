@@ -1,14 +1,20 @@
-"""Manifest-driven canonical batch runner for paper and raw-case stages."""
+"""Automated PDF batch runner for paper and raw-case construction stages."""
 
 from __future__ import annotations
 
-import json
 import hashlib
+import json
 import re
-from dataclasses import asdict
+import shutil
 from pathlib import Path
 from typing import Any
 
+from .discovery import (
+    discover_parsed_metadata,
+    discover_pdf_rows,
+    is_valid_doi,
+    normalize_doi,
+)
 from .image_catalog import (
     build_image_catalog,
     discover_image_paths,
@@ -23,10 +29,11 @@ from .reference import ReferenceTask, run_reference_construction
 from .review import ReviewCase, run_independent_review
 from .screening import ParsedPaper, candidate_manifest_rows, run_candidate_screen, run_paper_screen
 from .structure import StructureTask, run_structure_resolution
-from .vocabulary import OFFICIAL_MECHANISM_SET
+from .vocabulary import ACCEPTED_REVIEW_DECISIONS, OFFICIAL_MECHANISM_SET
 
-def run_manifest_pipeline(
-    manifest_path: Path,
+
+def run_pdf_pipeline(
+    input_path: Path,
     *,
     output_root: Path,
     client: ModelClient,
@@ -34,24 +41,52 @@ def run_manifest_pipeline(
     keep_going: bool = False,
     mineru_options: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Run the complete raw-case construction pipeline from a PDF manifest."""
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
-    validate_pipeline_manifest(manifest)
+    """Run the complete pipeline from one PDF or a recursively scanned directory."""
+    output_root = output_root.resolve()
+    output_root.mkdir(parents=True, exist_ok=True)
+    manifest = {
+        "manifest_version": "1.0",
+        "generated_by": "photomechbench",
+        "input_path": str(input_path.resolve()),
+        "papers": discover_pdf_rows(input_path),
+    }
+    _write_json(output_root / "discovered_pdf_inputs.json", manifest)
+    return _run_discovered_pipeline(
+        manifest,
+        output_root=output_root,
+        client=client,
+        resume=resume,
+        keep_going=keep_going,
+        mineru_options=mineru_options,
+    )
+
+
+def _run_discovered_pipeline(
+    manifest: dict[str, Any],
+    *,
+    output_root: Path,
+    client: ModelClient,
+    resume: bool = False,
+    keep_going: bool = False,
+    mineru_options: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Continue the pipeline from automatically discovered in-memory paper rows."""
     output_root.mkdir(parents=True, exist_ok=True)
     results: list[dict[str, Any]] = []
     candidate_reviews: list[dict[str, Any]] = []
     candidate_reviews_by_paper: list[tuple[str, dict[str, Any]]] = []
     image_catalogs: dict[str, dict[str, Any]] = {}
+    internal_manifest_path = output_root / "internal_paper_manifest.json"
+    _write_json(internal_manifest_path, manifest)
 
     for row in manifest.get("papers", []):
         paper_id = str(row["paper_id"])
-        mechanism = str(row["retrieval_mechanism"])
         paper_root = output_root / "papers" / paper_id
         if not mineru_options or not mineru_options.get("token"):
             raise ValueError("A MinerU API token is required to parse every source PDF.")
         try:
             parse_report = parse_pdf_with_mineru_vlm(
-                _resolve(manifest_path, row["source_pdf"]),
+                Path(str(row["source_pdf"])).resolve(),
                 output_dir=paper_root / "00_mineru",
                 resume=resume,
                 **mineru_options,
@@ -65,7 +100,17 @@ def run_manifest_pipeline(
         results.append({"item_type": "paper", "item_id": paper_id, "stage": "mineru_vlm", "status": "completed", "error": None})
         source_md = Path(str(parse_report["source_markdown"]))
         source_image_dir = Path(str(parse_report["source_image_dir"]))
-        paper = ParsedPaper(str(row["doi"]), source_md, str(row.get("title") or ""), Path(str(row["source_pdf"])).name)
+        parsed_metadata = discover_parsed_metadata(source_md)
+        row["parsed_doi_candidate"] = parsed_metadata["doi"]
+        row["parsed_title_candidate"] = parsed_metadata["title"]
+        row["metadata_status"] = "pending_stage1_confirmation"
+        _write_json(internal_manifest_path, manifest)
+        paper = ParsedPaper(
+            parsed_metadata["doi"],
+            source_md,
+            parsed_metadata["title"],
+            Path(str(row["source_pdf"])).name,
+        )
         image_paths = discover_image_paths(source_image_dir=source_image_dir)
         image_catalog = build_image_catalog(paper.source_md, image_paths)
         image_catalogs[paper_id] = image_catalog
@@ -73,7 +118,6 @@ def run_manifest_pipeline(
         compact_images = prompt_image_records(image_catalog)
         stage1 = run_paper_screen(
             paper,
-            retrieval_mechanism=mechanism,
             output_dir=paper_root / "01_paper_screen",
             client=client,
             image_candidates=compact_images,
@@ -84,6 +128,22 @@ def run_manifest_pipeline(
             if not keep_going:
                 break
             continue
+        stage1_value = stage1.parsed or {}
+        resolved_doi = normalize_doi(stage1_value.get("doi") or parsed_metadata["doi"])
+        resolved_title = str(stage1_value.get("title") or parsed_metadata["title"]).strip()
+        if not is_valid_doi(resolved_doi):
+            error = "No valid source-grounded DOI could be recovered from the parsed paper."
+            row["metadata_status"] = "failed_missing_doi"
+            results.append({"item_type": "paper", "item_id": paper_id, "stage": "metadata", "status": "failed", "error": error})
+            _write_json(internal_manifest_path, manifest)
+            if not keep_going:
+                break
+            continue
+        row["doi"] = resolved_doi
+        row["title"] = resolved_title
+        row["metadata_status"] = "confirmed_from_parsed_source"
+        paper = ParsedPaper(resolved_doi, source_md, resolved_title, Path(str(row["source_pdf"])).name)
+        _write_json(internal_manifest_path, manifest)
         if (stage1.parsed or {}).get("paper_verdict") != "pass":
             continue
         recommended_ids = list((stage1.parsed or {}).get("recommended_image_ids") or [])[:12]
@@ -111,7 +171,6 @@ def run_manifest_pipeline(
         )
         stage2 = run_candidate_screen(
             paper,
-            retrieval_mechanism=mechanism,
             paper_review=stage1.parsed or {},
             output_dir=paper_root / "02_candidate_screen",
             client=client,
@@ -123,9 +182,15 @@ def run_manifest_pipeline(
         if stage2.parsed:
             candidate_reviews.append(stage2.parsed)
             candidate_reviews_by_paper.append((paper_id, stage2.parsed))
+            discovered_mechanism = stage2.parsed.get("target_discovery_mechanism")
+            if discovered_mechanism in OFFICIAL_MECHANISM_SET:
+                row["discovery_mechanism"] = discovered_mechanism
+                row["mechanism_discovery_status"] = "assigned_by_stage2"
+                _write_json(internal_manifest_path, manifest)
         if stage2.status == "failed" and not keep_going:
             break
 
+    _write_json(internal_manifest_path, manifest)
     _write_json(output_root / "candidate_manifest.json", {"rows": candidate_manifest_rows(candidate_reviews)})
     automatic = build_automatic_case_rows(
         manifest,
@@ -135,6 +200,7 @@ def run_manifest_pipeline(
     _write_json(output_root / "automatic_case_manifest.json", automatic)
 
     paper_index = {str(row["paper_id"]): row for row in manifest.get("papers", [])}
+    accepted_identities: dict[tuple[str, str, str], str] = {}
     for row in automatic["passed"]:
         case_id = str(row["case_id"])
         candidate_id = str(row["candidate_id"])
@@ -178,6 +244,15 @@ def run_manifest_pipeline(
         results.append({"item_type": "case", "item_id": case_id, "stage": "review", "status": review.status, "decision": review.decision, "error": review.error})
         if review.status == "failed" and not keep_going:
             break
+        if review.decision in ACCEPTED_REVIEW_DECISIONS:
+            package_result = _package_reviewed_case(
+                delivery / "final_reference_alignment.json",
+                output_root=output_root,
+                archive_mechanism=str(row["archive_mechanism"]),
+                case_id=case_id,
+                accepted_identities=accepted_identities,
+            )
+            results.append(package_result)
         if review.decision == "NEEDS_MINOR_FIX":
             lock_path = structure_dir / "locked_structure.json"
             lock = json.loads(lock_path.read_text(encoding="utf-8"))
@@ -203,11 +278,35 @@ def run_manifest_pipeline(
                 repaired_case = ReviewCase.from_directory(repair.output_dir / "rereview_input", archive_mechanism=str(row["archive_mechanism"]))
                 rereview = run_independent_review(repaired_case, output_dir=case_root / "07_rereview", client=client, resume=resume)
                 results.append({"item_type": "case", "item_id": case_id, "stage": "rereview", "status": rereview.status, "decision": rereview.decision, "error": rereview.error})
+                if rereview.decision in ACCEPTED_REVIEW_DECISIONS:
+                    package_result = _package_reviewed_case(
+                        repair.output_dir / "rereview_input" / "final_reference_alignment.json",
+                        output_root=output_root,
+                        archive_mechanism=str(row["archive_mechanism"]),
+                        case_id=case_id,
+                        accepted_identities=accepted_identities,
+                    )
+                    results.append(package_result)
                 if rereview.status == "failed" and not keep_going:
                     break
             elif not keep_going:
                 break
-    return _finish(output_root, results)
+    _write_json(
+        output_root / "final_duplicate_report.json",
+        {
+            "identity_rule": "normalized DOI + normalized molecule label + locked canonical SMILES",
+            "duplicate_count": sum(row.get("status") == "rejected_duplicate" for row in results),
+            "duplicates": [
+                row for row in results
+                if row.get("stage") == "package" and row.get("status") == "rejected_duplicate"
+            ],
+        },
+    )
+    return _finish(
+        output_root,
+        results,
+        expected_case_ids={str(row["case_id"]) for row in automatic["passed"]},
+    )
 
 
 def build_automatic_case_rows(
@@ -285,7 +384,7 @@ def build_automatic_case_rows(
                     "molecule_label": label,
                 },
                 "target_context": {
-                    "retrieval_mechanism": str(paper["retrieval_mechanism"]),
+                    "discovery_mechanism": str(paper["discovery_mechanism"]),
                     "stage2_eligibility": "pass",
                     "candidate_confidence": unit.get("confidence"),
                     "candidate_reason": unit.get("reason"),
@@ -332,40 +431,83 @@ def _identifier_part(value: Any) -> str:
     return text[:48] or "UNNAMED"
 
 
-def validate_pipeline_manifest(value: dict[str, Any]) -> None:
-    if not isinstance(value, dict) or value.get("manifest_version") != "1.0":
-        raise ValueError("Pipeline manifest_version must be 1.0.")
-    papers = value.get("papers")
-    if not isinstance(papers, list) or not papers:
-        raise ValueError("Pipeline manifest must contain at least one paper.")
-    paper_ids: set[str] = set()
-    for row in papers:
-        required = {"paper_id", "doi", "retrieval_mechanism", "source_pdf"}
-        missing = required - set(row)
-        if missing:
-            raise ValueError(f"Paper row is missing: {sorted(missing)}")
-        unsupported = {"source_md", "source_image_dir", "source_images"} & set(row)
-        if unsupported:
-            raise ValueError(f"Paper rows accept source_pdf only; remove unsupported fields: {sorted(unsupported)}")
-        if row["retrieval_mechanism"] not in OFFICIAL_MECHANISM_SET:
-            raise ValueError(f"Unknown retrieval mechanism: {row['retrieval_mechanism']}")
-        paper_id = str(row["paper_id"])
-        if paper_id in paper_ids:
-            raise ValueError(f"Duplicate paper_id: {paper_id}")
-        paper_ids.add(paper_id)
-    if "cases" in value:
-        raise ValueError("Explicit cases are not supported; cases are generated automatically from Stage 2 passes.")
-
-
-def _resolve(manifest_path: Path, value: str) -> Path:
-    path = Path(value)
-    return path if path.is_absolute() else (manifest_path.parent / path).resolve()
-
-
-def _finish(output_root: Path, results: list[dict[str, Any]]) -> dict[str, Any]:
-    summary = {"result_count": len(results), "failure_count": sum(row.get("status") in {"failed", "failed_gate", "not_confirmed"} for row in results), "results": results}
+def _finish(
+    output_root: Path,
+    results: list[dict[str, Any]],
+    *,
+    expected_case_ids: set[str],
+) -> dict[str, Any]:
+    technical_failure_items = {
+        (str(row.get("item_type")), str(row.get("item_id")))
+        for row in results
+        if row.get("status") in {"failed", "failed_gate", "not_confirmed"}
+    }
+    packaged_case_ids = {
+        str(row["item_id"])
+        for row in results
+        if row.get("stage") == "package" and row.get("status") == "completed"
+    }
+    unaccepted_case_ids = expected_case_ids - packaged_case_ids
+    failed_items = technical_failure_items | {("case", case_id) for case_id in unaccepted_case_ids}
+    summary = {
+        "result_count": len(results),
+        "failure_count": len(failed_items),
+        "technical_failure_count": len(technical_failure_items),
+        "candidate_case_count": len(expected_case_ids),
+        "final_case_count": len(packaged_case_ids),
+        "unaccepted_case_count": len(unaccepted_case_ids),
+        "unaccepted_case_ids": sorted(unaccepted_case_ids),
+        "results": results,
+    }
     _write_json(output_root / "pipeline_summary.json", summary)
     return summary
+
+
+def _package_reviewed_case(
+    source_path: Path,
+    *,
+    output_root: Path,
+    archive_mechanism: str,
+    case_id: str,
+    accepted_identities: dict[tuple[str, str, str], str],
+) -> dict[str, Any]:
+    identity = _final_identity_key(source_path)
+    duplicate_of = accepted_identities.get(identity)
+    if duplicate_of is not None:
+        return {
+            "item_type": "case",
+            "item_id": case_id,
+            "stage": "package",
+            "status": "rejected_duplicate",
+            "duplicate_of": duplicate_of,
+            "identity": {
+                "doi": identity[0],
+                "molecule_label": identity[1],
+                "canonical_smiles": identity[2],
+            },
+        }
+    accepted_identities[identity] = case_id
+    destination = output_root / "final_json" / archive_mechanism / f"{case_id}.json"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source_path, destination)
+    return {
+        "item_type": "case",
+        "item_id": case_id,
+        "stage": "package",
+        "status": "completed",
+        "path": str(destination),
+    }
+
+
+def _final_identity_key(source_path: Path) -> tuple[str, str, str]:
+    case = json.loads(source_path.read_text(encoding="utf-8-sig"))
+    source_article = case["hidden_reference"]["source_article"]
+    smiles = case["public_input"]["molecule"]["structure"]["value"]
+    return (
+        normalize_doi(source_article["doi"]),
+        _normalized_label(source_article["molecule_label"]),
+        str(smiles).strip(),
+    )
 
 
 def _write_json(path: Path, value: Any) -> None:
