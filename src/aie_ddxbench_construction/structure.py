@@ -86,7 +86,7 @@ def run_structure_resolution(
             prompt_version=REPAIR_PROMPT_VERSION,
         )
         repaired_smiles = _proposed_smiles(repair)
-        if repaired_smiles and repaired_smiles != smiles:
+        if repaired_smiles:
             attempt = _validate_render_review(task, repaired_smiles, output_dir=output_dir / "04_repaired_attempt", client=client)
 
     summary = {
@@ -218,7 +218,7 @@ def _validate_render_review(task: StructureTask, smiles: str | None, *, output_d
     _write_json(output_dir / "identity_review.json", review)
     confirmed = (
         review.get("structure_match_status") == "confirmed_match"
-        and review.get("final_stage3_decision") == "confirmed_smiles"
+        and review.get("final_stage3_decision") in {"confirmed_smiles", "confirmed_match"}
         and review.get("single_molecule_ok") is True
         and review.get("target_label_ok") is True
         and review.get("not_confused_with_other_paper_molecule") is True

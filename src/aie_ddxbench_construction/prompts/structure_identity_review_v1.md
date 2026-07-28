@@ -6,4 +6,4 @@ Check scaffold and bond connectivity, linker length, substituent identity and po
 
 Return exactly one JSON object with `candidate_id`, `molecule_label`, `candidate_smiles`, `structure_match_status`, `single_molecule_ok`, `target_label_ok`, `not_confused_with_other_paper_molecule`, `confusion_risk`, `final_stage3_decision`, `confidence`, `failure_mode`, `key_matching_features`, `specific_concerns`, and `recommended_next_action`.
 
-Only an explicit `confirmed_match` plus `confirmed_smiles` can create a locked structure. Copy the supplied candidate SMILES; do not rewrite it.
+Use `confirmed_match|mismatch|unclear` for `structure_match_status` and `confirmed_smiles|repair_smiles|reject` for `final_stage3_decision`. Only `structure_match_status: confirmed_match` together with `final_stage3_decision: confirmed_smiles` can create a locked structure. Copy the supplied candidate SMILES; do not rewrite it.
