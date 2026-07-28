@@ -25,6 +25,9 @@ CANDIDATE_SCREEN_PROMPT_VERSION = "candidate_screen_v1"
 PAPER_VERDICTS = {"pass", "fail"}
 CONCRETE_UNIT_TYPES = {"molecule", "probe", "ligand", "guest"}
 CANDIDATE_ELIGIBILITY = {"pass", "fail"}
+CANDIDATE_ROLES = {"primary", "co_primary", "secondary", "contextual"}
+CANDIDATE_EVIDENCE_STRENGTHS = {"strong", "moderate", "weak", "unsupported"}
+CANDIDATE_CONFIDENCE = {"high", "medium", "low"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -237,14 +240,24 @@ def validate_candidate_review(
         text_sources = unit.get("structure_text_sources")
         if not isinstance(text_sources, list) or not all(isinstance(item, str) for item in text_sources):
             errors.append(f"{prefix}.structure_text_sources must be an array of strings")
+        if unit.get("confidence") not in CANDIDATE_CONFIDENCE:
+            errors.append(f"{prefix}.confidence is invalid")
         assignments = unit.get("official_mechanism_assignments", [])
         if not isinstance(assignments, list):
             errors.append(f"{prefix}.official_mechanism_assignments must be an array")
             continue
-        for assignment in assignments:
-            mechanism = assignment.get("mechanism") if isinstance(assignment, dict) else None
+        for assignment_index, assignment in enumerate(assignments):
+            assignment_prefix = f"{prefix}.official_mechanism_assignments[{assignment_index}]"
+            if not isinstance(assignment, dict):
+                errors.append(f"{assignment_prefix} must be an object")
+                continue
+            mechanism = assignment.get("mechanism")
             if mechanism not in OFFICIAL_MECHANISMS:
-                errors.append(f"{prefix}: non-official mechanism assignment {mechanism!r}")
+                errors.append(f"{assignment_prefix}.mechanism is not official: {mechanism!r}")
+            if assignment.get("role") not in CANDIDATE_ROLES:
+                errors.append(f"{assignment_prefix}.role is invalid")
+            if assignment.get("evidence_strength") not in CANDIDATE_EVIDENCE_STRENGTHS:
+                errors.append(f"{assignment_prefix}.evidence_strength is invalid")
     return errors
 
 

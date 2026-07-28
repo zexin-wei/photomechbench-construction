@@ -22,7 +22,7 @@ STRUCTURE_SYSTEM_PROMPT = (
     "context and images. Return one JSON object without hidden reasoning."
 )
 PROPOSAL_PROMPT_VERSION = "smiles_proposal_v1"
-IDENTITY_PROMPT_VERSION = "structure_identity_review_v1"
+IDENTITY_PROMPT_VERSION = "structure_identity_review_v2"
 REPAIR_PROMPT_VERSION = "smiles_repair_v1"
 
 
