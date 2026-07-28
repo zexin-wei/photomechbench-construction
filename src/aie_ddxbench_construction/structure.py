@@ -23,7 +23,7 @@ STRUCTURE_SYSTEM_PROMPT = (
 )
 PROPOSAL_PROMPT_VERSION = "smiles_proposal_v1"
 IDENTITY_PROMPT_VERSION = "structure_identity_review_v2"
-REPAIR_PROMPT_VERSION = "smiles_repair_v1"
+REPAIR_PROMPT_VERSION = "smiles_repair_v2"
 
 
 @dataclass(frozen=True, slots=True)
