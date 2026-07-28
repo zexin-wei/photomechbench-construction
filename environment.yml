@@ -3,7 +3,8 @@ channels:
   - conda-forge
 dependencies:
   - python=3.10
-  - rdkit=2022.09.5
   - pip
   - pip:
+      - numpy==1.26.4
+      - rdkit-pypi==2022.9.5
       - -e .
