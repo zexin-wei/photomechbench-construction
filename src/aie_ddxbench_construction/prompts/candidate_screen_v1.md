@@ -13,7 +13,7 @@ Candidate policy:
 - Record each concrete candidate as `pass` or `fail`. A candidate passes only when it is a locatable concrete molecule and the supplied source contains enough identity information for Stage 3. Do not emit separate records for series, families, host-guest assemblies, frameworks, polymers, experimental media, instruments, crystal states, or other non-molecular context.
 - Distinguish molecule-specific evidence from series-level, comparator-only, application-only, and keyword-only statements.
 - Keep official mechanism assignments inside the supplied 11-family vocabulary. Non-official concepts belong in contextual notes.
-- In `structure_image_ids`, return at most two IDs from the supplied contact sheets, ordered from strongest to weaker identity evidence. These IDs are resolved deterministically to the original high-resolution files for Stage 3.
+- In `structure_image_ids`, return at most two IDs from the supplied contact sheets, ordered from strongest to weaker identity evidence.
 - In `structure_text_sources`, identify only text, captions, schemes, or tables actually present in the supplied parsed source. Do not request unavailable supporting information, databases, CCDC records, or unsupplied figures. Record missing-source, analogue, isomer, metal-complex, and multicomponent concerns in `stage3_risk_flags`.
 
 Return exactly one JSON object with this structure:
@@ -49,4 +49,4 @@ Allowed values:
 - `unit_type`: `molecule|probe|ligand|guest|unclear`
 - `eligibility`: `pass|fail`
 
-Official assignments must use a supplied official mechanism and include a role and evidence strength. Keep `reason` concise and do not reproduce long evidence summaries that the downstream reference stage will reconstruct from the source.
+Official assignments must use a supplied official mechanism and include a role and evidence strength. Keep `reason` concise and do not reproduce long evidence summaries.
