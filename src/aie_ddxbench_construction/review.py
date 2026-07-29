@@ -63,11 +63,6 @@ def run_independent_review(
 ) -> ReviewResult:
     """Review one case and preserve the exact request text and input hashes."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    if resume:
-        existing = load_valid_review_result(case.case_id, output_dir)
-        if existing is not None:
-            return ReviewResult(case.case_id, "skipped_valid", existing, output_dir)
-
     json_text = case.case_json.read_text(encoding="utf-8-sig")
     source_text = case.source_md.read_text(encoding="utf-8", errors="replace")
     request_text = build_independent_review_text(
@@ -90,6 +85,16 @@ def run_independent_review(
             "structure_match.png": _file_record(case.structure_match),
         },
     }
+    if resume:
+        existing = load_valid_review_result(
+            case.case_id,
+            output_dir,
+            expected_request=request_record,
+        )
+        if existing is not None:
+            return ReviewResult(case.case_id, "skipped_valid", existing, output_dir)
+
+    _remove_stale_review_outputs(output_dir)
     _write_json(output_dir / "request.json", request_record)
     (output_dir / "request.md").write_text(request_text, encoding="utf-8")
 
@@ -149,27 +154,60 @@ def parse_review_decision(text: str) -> str | None:
     return decision if decision in REVIEW_DECISIONS else None
 
 
-def load_valid_review_result(case_id: str, output_dir: Path) -> str | None:
+def load_valid_review_result(
+    case_id: str,
+    output_dir: Path,
+    *,
+    expected_request: dict[str, Any],
+) -> str | None:
+    request_path = output_dir / "request.json"
+    request_md_path = output_dir / "request.md"
     summary_path = output_dir / "review_summary.json"
     response_path = output_dir / "response.json"
     raw_path = output_dir / "raw_response.txt"
     review_path = output_dir / "review.md"
-    if not all(path.is_file() for path in (summary_path, response_path, raw_path, review_path)):
+    required_paths = (
+        request_path,
+        request_md_path,
+        summary_path,
+        response_path,
+        raw_path,
+        review_path,
+    )
+    if not all(path.is_file() for path in required_paths):
         return None
     try:
+        request = json.loads(request_path.read_text(encoding="utf-8"))
         summary = json.loads(summary_path.read_text(encoding="utf-8"))
         response = json.loads(response_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
+    if request != expected_request:
+        return None
+    if request_md_path.read_text(encoding="utf-8", errors="replace") != expected_request.get("user_text"):
+        return None
     decision = summary.get("decision")
     if summary.get("case_id") != case_id or decision not in REVIEW_DECISIONS or response.get("success") is not True:
+        return None
+    if response.get("decision") != decision:
+        return None
+    if response.get("provider") != request.get("provider") or response.get("requested_model") != request.get("model"):
         return None
     raw_text = raw_path.read_text(encoding="utf-8", errors="replace")
     if parse_review_decision(raw_text) != decision:
         return None
     if response.get("raw_response_sha256") != _sha256(raw_path):
         return None
+    if _sha256(review_path) != _sha256(raw_path):
+        return None
     return str(decision)
+
+
+def _remove_stale_review_outputs(output_dir: Path) -> None:
+    for name in ("raw_response.txt", "review.md", "response.json", "review_summary.json"):
+        path = output_dir / name
+        if path.is_file():
+            path.unlink()
 
 
 def _file_record(path: Path) -> dict[str, Any]:

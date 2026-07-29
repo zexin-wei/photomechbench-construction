@@ -95,8 +95,10 @@ independent review and the exact final identity check are collected under
 The pipeline summary separately reports technical failures and candidate cases
 that did not reach an accepted final review decision.
 
-`--resume` reuses only outputs whose recorded hashes and validation state remain
-valid. `--keep-going` allows later papers or cases to continue after an isolated
+`--resume` reuses an independent review only when its complete recorded request,
+including all three input hashes, still matches the current run and its saved
+response remains valid. Other stages apply their own recorded-hash and validation
+checks. `--keep-going` allows later papers or cases to continue after an isolated
 failure.
 
 ## Runtime Assets
