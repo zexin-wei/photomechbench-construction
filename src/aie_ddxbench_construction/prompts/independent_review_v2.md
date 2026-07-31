@@ -82,7 +82,7 @@ Covers radiative and nonradiative rates, oscillator strength, state population, 
 
 Covers restriction of intramolecular motion, rotation, vibration, or conformational freedom that suppresses nonradiative decay. Aggregation, crystallization, solid-state enhancement, or rigidity alone is insufficient. The source must connect the emission change to restricted motion through viscosity, temperature, rotor controls, structural comparisons, crystal geometry, kinetics, or calculations.
 
-If the JSON marks `RIM_RIR_RIV` as `supported` but the supplied source evidence establishes only aggregation, crystallization, source-labeled AIE, or fluorescence turn-on without a motion-restriction link, treat this as a limited evidence overclaim requiring `NEEDS_MINOR_FIX`. Do not reduce it to a release-ready caveat unless another source passage provides the missing motion-specific connection.
+If the JSON marks `RIM_RIR_RIV` as `supported` but the supplied source evidence establishes only aggregation, crystallization, source-labeled AIE, or fluorescence turn-on without a motion-restriction link, treat this as a limited evidence overclaim requiring `NEEDS_MINOR_FIX`. Do not treat the case as release-ready unless another source passage provides the missing motion-specific connection.
 
 ### `SOKR_ANTI_KASHA`
 
@@ -168,7 +168,6 @@ Labels:
 
 ```text
 SMILES_OK
-SMILES_OK_WITH_CAVEAT
 SMILES_UNCLEAR_NEEDS_IMAGE_CHECK
 SMILES_WRONG
 ```
@@ -276,7 +275,6 @@ Labels:
 
 ```text
 MECHANISM_SET_COMPLETE
-MECHANISM_SET_COMPLETE_WITH_CAVEAT
 MECHANISM_SET_MINOR_ISSUE
 MECHANISM_SET_INCOMPLETE
 MECHANISM_SET_WRONG
@@ -293,13 +291,12 @@ MECHANISM_VOCAB_INVALID
 
 ## 8. Final synthesis
 
-Check that the integrated diagnosis accurately summarizes the evidence and diagnosis units. It should distinguish primary, co-primary, secondary, contextual, downstream, weakened, rejected, and underdetermined mechanisms; separate demonstrated conclusions from unresolved interpretations; avoid unsupported strong claims; and preserve sample, phase, environment, state-assignment, or kinetic caveats when they materially limit the conclusion.
+Check that the integrated diagnosis accurately summarizes the evidence and diagnosis units. It should distinguish primary, co-primary, secondary, contextual, downstream, weakened, rejected, and underdetermined mechanisms; separate demonstrated conclusions from unresolved interpretations; avoid unsupported strong claims; and preserve sample, phase, environment, state-assignment, or kinetic limitations when they materially narrow the conclusion.
 
 Labels:
 
 ```text
 FINAL_SYNTHESIS_OK
-FINAL_SYNTHESIS_OK_WITH_CAVEAT
 FINAL_SYNTHESIS_OVERCLAIMED
 FINAL_SYNTHESIS_INCOMPLETE
 FINAL_SYNTHESIS_INCONSISTENT
@@ -307,25 +304,20 @@ FINAL_SYNTHESIS_INCONSISTENT
 
 ## 9. Overall usability and decision calibration
 
+Use `PASS` only when the molecular identity, core evidence, mechanism diagnoses, and final synthesis are reliable and no correction is required.
+
 Use `FAIL_OR_REBUILD` for a source mismatch, wrong SMILES, fabricated or missing core evidence, a severely incorrect mechanism set, an internally contradictory synthesis, unrecoverable leakage, or artifacts too incomplete to verify the case.
 
-Use `NEEDS_MINOR_FIX` only for limited but substantive corrections, such as removable leakage, a small evidence overclaim, a materially incorrect status or role, a missing necessary caveat, an apparent rate described as microscopic, or a secondary mechanism incorrectly promoted to primary.
+Use `NEEDS_MINOR_FIX` only for limited but substantive corrections, such as removable leakage, a small evidence overclaim, a materially incorrect status or role, a missing necessary limitation, an apparent rate described as microscopic, or a secondary mechanism incorrectly promoted to primary.
 
 Do not assign `NEEDS_MINOR_FIX` merely for stylistic role names, short but adequate quotes, explanations placed in a different evidence field, formatting or OCR variation, or clearly marked indirect analogue evidence used at an appropriate strength.
 
-Use `PASS_WITH_CAVEAT` when the molecular identity, core evidence, and mechanism diagnoses are reliable, but a small number of limitations remain that do not affect the usability of the case. These limitations must already be represented in the case and must not require mandatory repair.
-
-Do not use `PASS_WITH_CAVEAT` when a limitation requires changing a mechanism's evidence status, diagnosis role, supporting evidence, or final synthesis. Such a case requires `NEEDS_MINOR_FIX`.
-
 Do not downgrade a case solely because the source does not test every alternative mechanism, because secondary mechanisms remain uncertain, or because the JSON correctly records those alternatives as `underdetermined`. These are expected properties of an evidence-aware differential diagnosis, not defects in the case. If all source limitations are represented at the correct evidential strength and no material issue remains, use `PASS`.
-
-When the only stated limitation is correctly represented uncertainty in secondary or alternative mechanisms, the required decision is `PASS`, not `PASS_WITH_CAVEAT`.
 
 The decision, usability, and disposition must follow one of these combinations:
 
 ```text
 PASS             -> CASE_USABLE             -> KEEP
-PASS_WITH_CAVEAT -> CASE_USABLE_WITH_CAVEAT -> KEEP_WITH_CAVEAT
 NEEDS_MINOR_FIX  -> CASE_NEEDS_MINOR_FIX    -> MINOR_FIX_THEN_KEEP
 FAIL_OR_REBUILD  -> CASE_NEEDS_MAJOR_REPAIR -> MAJOR_REPAIR
 FAIL_OR_REBUILD  -> CASE_NOT_USABLE         -> REBUILD_OR_DROP
@@ -337,7 +329,7 @@ Review all core evidence units and every diagnosis unit. Repeat the item blocks 
 
 ```text
 overall_decision:
-PASS / PASS_WITH_CAVEAT / NEEDS_MINOR_FIX / FAIL_OR_REBUILD
+PASS / NEEDS_MINOR_FIX / FAIL_OR_REBUILD
 
 0. Artifact access status:
 FILE_ACCESS_COMPLETE / FILE_MISSING_OR_UNREADABLE / FILE_CONTENT_POSSIBLY_TRUNCATED
@@ -356,7 +348,7 @@ PUBLIC_INPUT_OK / PUBLIC_INPUT_LEAKAGE / PUBLIC_INPUT_UNCLEAR
 notes:
 
 4. SMILES and target identity:
-SMILES_OK / SMILES_OK_WITH_CAVEAT / SMILES_UNCLEAR_NEEDS_IMAGE_CHECK / SMILES_WRONG
+SMILES_OK / SMILES_UNCLEAR_NEEDS_IMAGE_CHECK / SMILES_WRONG
 target_identity_summary:
 stable_identity_key:
 duplicate_relevance_notes:
@@ -387,7 +379,7 @@ DIAGNOSIS_UNITS_OK / DIAGNOSIS_UNITS_MINOR_ISSUE / DIAGNOSIS_UNITS_OVERCLAIMED /
 notes:
 
 9. Mechanism-set completeness:
-MECHANISM_SET_COMPLETE / MECHANISM_SET_COMPLETE_WITH_CAVEAT / MECHANISM_SET_MINOR_ISSUE / MECHANISM_SET_INCOMPLETE / MECHANISM_SET_WRONG
+MECHANISM_SET_COMPLETE / MECHANISM_SET_MINOR_ISSUE / MECHANISM_SET_INCOMPLETE / MECHANISM_SET_WRONG
 recommended_primary_archive_mechanism:
 notes:
 
@@ -396,11 +388,11 @@ MECHANISM_VOCAB_OK / MECHANISM_VOCAB_MINOR_ISSUE / MECHANISM_VOCAB_OUT_OF_SCOPE_
 notes:
 
 11. Final synthesis:
-FINAL_SYNTHESIS_OK / FINAL_SYNTHESIS_OK_WITH_CAVEAT / FINAL_SYNTHESIS_OVERCLAIMED / FINAL_SYNTHESIS_INCOMPLETE / FINAL_SYNTHESIS_INCONSISTENT
+FINAL_SYNTHESIS_OK / FINAL_SYNTHESIS_OVERCLAIMED / FINAL_SYNTHESIS_INCOMPLETE / FINAL_SYNTHESIS_INCONSISTENT
 notes:
 
 12. Overall case usability:
-CASE_USABLE / CASE_USABLE_WITH_CAVEAT / CASE_NEEDS_MINOR_FIX / CASE_NEEDS_MAJOR_REPAIR / CASE_NOT_USABLE
+CASE_USABLE / CASE_NEEDS_MINOR_FIX / CASE_NEEDS_MAJOR_REPAIR / CASE_NOT_USABLE
 notes:
 
 13. Blocking issues:
@@ -421,7 +413,7 @@ State whether any required correction changes:
 - inclusion in the scored reference mechanism set.
 
 16. Disposition:
-KEEP / KEEP_WITH_CAVEAT / MINOR_FIX_THEN_KEEP / MAJOR_REPAIR / REBUILD_OR_DROP
+KEEP / MINOR_FIX_THEN_KEEP / MAJOR_REPAIR / REBUILD_OR_DROP
 notes:
 
 One-sentence summary:

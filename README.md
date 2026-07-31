@@ -89,9 +89,8 @@ resolution, reference construction, review, correction, and final JSON
 artifacts. `discovered_pdf_inputs.json` and `internal_paper_manifest.json` are
 generated automatically for traceability. `pipeline_summary.json`,
 `candidate_manifest.json`, `automatic_case_manifest.json`, and
-`final_duplicate_report.json` summarize the batch. Cases accepted by
-independent review and the exact final identity check are collected under
-`final_json/`.
+`final_duplicate_report.json` summarize the batch. Cases with a final `PASS`
+decision and an exact final identity match are collected under `final_json/`.
 The pipeline summary separately reports technical failures and candidate cases
 that did not reach an accepted final review decision.
 

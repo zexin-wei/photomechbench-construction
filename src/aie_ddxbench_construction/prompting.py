@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from importlib.resources import files
 
-INDEPENDENT_REVIEW_PROMPT_VERSION = "independent_review_v1"
+INDEPENDENT_REVIEW_PROMPT_VERSION = "independent_review_v2"
 INDEPENDENT_REVIEW_SYSTEM_PROMPT = (
     "You are a strict reviewer of AIE and molecular-photophysics benchmark cases. "
     "Use only the three supplied artifacts and follow the required output template exactly. "
